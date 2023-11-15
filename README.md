@@ -44,7 +44,7 @@ Public:Rooms:Available [<uuid1>, <uuid2>, <uuid3>]
 The below hash will be used to keep track of the state of the game in a room.
 
 ```
-Public:Room:<uuid> p1 <uuid> p2 <uuid> websocket <ws>
+Public:Room:<uuid> p1 <uuid> p2 <uuid> gameState <base3> websocket <ws>
 ```
 
 ### Private Rooms
@@ -75,11 +75,11 @@ sequenceDiagram
 
     Server->>Database: Create Available Public Room
     Note over Server, Database: HSET PUBLIC:room:<uuid> p1<uuid> <br> gameState 000000000 websocket <ws>
-    Note over Server, Database: RPUSH PUBLIC:rooms:available <uuid>
+    Note over Server, Database: RPUSH Public:rooms:available <uuid>
     Database-->>Server: Success
 
-    Server-->>Player1: Waiting for Random <br> Stranger to Join
-    Note over Player1, Server: ws/public
+    Server->>Player1: Success
+    Note over Player1, Server: ws/public <br> Message: Waiting for Player
     end
 
     rect rgb(50, 0, 0) 
@@ -94,12 +94,50 @@ sequenceDiagram
 
     Server->>Database: Join Available Room
     Note over Server, Database: RPOP Public:Rooms:Available<uuid>
-    Note over Server, Database: HSET PUBLIC:room:<uuid> p2<uuid> <br> gameState 000000000 websocket <ws>
+    Note over Server, Database: HSET Public:room:<uuid> p2<uuid> <br> gameState 000000000 websocket <ws>
     Database-->>Server: Success
     end
     
     Server->>Player1: Start Game
-    Note over Player1, Server: ws/public <br> Start Game
+    Note over Player1, Server: ws/public <br> Message: Start Game
     Server->>Player2: Start Game
-    Note over Player2, Server: ws/public <br> Start Game
+    Note over Player2, Server: ws/public <br> Message: Start Game
+
+    loop Game Play Until Winning Move
+    Player1->>Server: Make Move
+    Note over Player1, Server: ws/public <br> Message: 000010000
+    Server->>Database: Make Move
+    Note over Server, Database: HSET Public:room:<uuid> <br> gameState 000010000
+    Database-->>Server: Success
+    Server->>Player2: Update Game State
+    Note over Server, Player2: ws/public <br> Message: 000010000
+
+    Player2->>Server: Make Move
+    Note over Player2, Server: ws/public <br> Message: 002010000
+    Server->>Database: Make Move
+    Note over Server, Database: HSET Public:room:<uuid> <br> gameState 002010000
+    Database-->>Server: Success
+    Server->>Player1: Update Game State
+    Note over Server, Player1: ws/public <br> Message: 002010000
+    end
+
+    Player1->>Server: Make Move
+    Note over Player1, Server: ws/public <br> Message: 022111000
+    Server->>Database: Make Move
+    Note over Server, Database: HSET Public:room:<uuid> <br> gameState 022111000
+    Database-->>Server: Success
+    Server->>Player1: Player1 Wins
+    Note over Player1, Server: ws/public <br> Message: You Win
+    Server->>Player2: Player2 Loses
+    Note over Player2, Server: ws/public <br> Message: You Lose
+
+    Player1->>Server: Quit Game
+    Note over Player1, Server: ws/public <br> Message: Quit Game
+    Server->>Database: Terminate Game
+    Note over Server, Database: DEL Public:room:<uuid>
+    Database-->>Server: Success
+    Server->>Player1: Terminate Connection
+    Note over Server, Player1: ws/public <br> Message: Terminate Connection 
+    Server->>Player2: Terminate Connection
+    Note over Server, Player2: ws/public <br> Message: Terminate Connection 
 ```
