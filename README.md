@@ -1,13 +1,14 @@
 # Tic-Tac-GO
 
 Tic-Tac-GO is a website with a GO backend and a Javascript frontend where people can play 
-tic-tac-toe against their friends, family, and random people online. When users enter the site, they will be presented with two choices; to play with a friend or play with
-a stranger. Once a choice has been made, the user will either join an available room when playing 
-with anotheruser or they will create a room to join with their friend. Once both parites are in the
-room, the regular game of tic-tac-toe will begin. Once a player wins, both players will be
-presented the option to either have a rematch or exit the game. If rematch is selected by both 
-players, then a new game will commence within the same room. However, if either of them hits exit,
-the game ends and the room is destroyed.  
+tic-tac-toe against their friends, family, and random people online. When users enter the site, 
+they will be presented with two choices; to play with a friend or play with a random stranger. Once
+a choice has been made, the user will either join an available room when playing with another user
+or they will create a room to join with their friend. Once both parites are in the room, the 
+regular game of tic-tac-toe will begin. Once a player wins, both players will be presented the 
+option to either have a rematch or exit the game. If rematch is selected by both players, then a
+new game will commence within the same room. However, if either of them hits exit, the game ends 
+and the room is destroyed.  
 
 ## Components
 
