@@ -18,6 +18,7 @@ The application will conist of three main components:
 3) Redis database to manage game rooms.
 
 ```mermaid
+%%{init: {'theme':'dark'}}%%
 graph TD;
     Javascript-->Backend;
     Backend-->Database;
@@ -58,6 +59,7 @@ Private:Room:<uuid> p1 <uuid> p2 <uuid> gameState <base3> websocket <ws>
 ### Public Game Sequence Diagram
 
 ```mermaid
+%%{init: {'theme':'dark'}}%%
 sequenceDiagram
     participant Player1
     participant Server
