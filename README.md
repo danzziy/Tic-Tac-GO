@@ -1,7 +1,7 @@
 # Tic-Tac-GO
 
 Tic-Tac-GO is a website with a GO backend and a Javascript frontend where people can play 
-tic-tac-toe against there friends, family, and random people online. The vision for this site is to
+tic-tac-toe against their friends, family, and random people online. The vision for this site is to
 have users who enter the website be presented with two choices; to play with a friend or play with
 a stranger. Once a choice has been made, the user will either join an available room when playing 
 with anotheruser or they will create a room to join with their friend. Once both parites are in the
