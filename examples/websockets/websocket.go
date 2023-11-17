@@ -11,6 +11,7 @@ var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 }
+var counter = 0
 
 func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
@@ -32,12 +33,24 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 		// If the message received is "join room", send "waiting for player"
 		if string(msg) == "Join Room" {
+			log.Printf("counter: %d", counter)
 			log.Println("Message: ", string(msg))
-			responseMsg := []byte("Waiting for Player")
-			if err := conn.WriteMessage(websocket.TextMessage, responseMsg); err != nil {
-				log.Println("Error writing message:", err)
-				break
+
+			if counter != -4 {
+				responseMsg := []byte("Waiting for Player")
+				if err := conn.WriteMessage(websocket.TextMessage, responseMsg); err != nil {
+					log.Println("Error writing message:", err)
+					break
+				}
+			} else if counter > 0 {
+				responseMsg := []byte("Start Game")
+				if err := conn.WriteMessage(websocket.TextMessage, responseMsg); err != nil {
+					log.Println("Error writing message:", err)
+					break
+				}
 			}
+			counter++
+
 		}
 	}
 }
