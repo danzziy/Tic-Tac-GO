@@ -45,7 +45,7 @@ Public:Rooms:Available [<uuid1>, <uuid2>, <uuid3>]
 The below hash will be used to keep track of the state of the game in a room.
 
 ```
-Public:Room:<uuid> p1SocketID <id> p2SocketID <id> gameState <base3>
+Public:Room:<uuid> p1 <uuid> p2 <uuid> gameState <base3> websocket <ws>
 ```
 
 ### Private Rooms
@@ -53,7 +53,7 @@ Public:Room:<uuid> p1SocketID <id> p2SocketID <id> gameState <base3>
 Private rooms will only have the below hash associated with it.
 
 ```
-Private:Room:<uuid> p1SocketID <id> p2SocketID <id> gameState <base3>
+Private:Room:<uuid> p1 <uuid> p2 <uuid> gameState <base3> websocket <ws>
 ```
 
 ### Public Game Sequence Diagram
@@ -67,11 +67,6 @@ sequenceDiagram
     participant Player2
 
     rect rgb(0, 0, 50)
-    Player1->>Server: Enter Site 
-    Note over Player1, Server: GET / 
-    Server-->>Player1: Success
-    Note over Player1, Server: 200 OK <br> HTML/Javascript
-
     Note over Player1, Database: Player1 Creates a Room on One Thread of the Server
     Player1->>Server: Start Game with <br> Random Stranger 
     Note over Player1, Server: ws/public <br> Initialize WS Connection <br> Message: Join Room
@@ -81,7 +76,7 @@ sequenceDiagram
     Database-->>Server: No Rooms Available
 
     Server->>Database: Create Available Public Room
-    Note over Server, Database: HSET PUBLIC:room:<uuid> p1SocketID <br> gameState 000000000
+    Note over Server, Database: HSET PUBLIC:room:<uuid> p1<uuid> <br> gameState 000000000 websocket <ws>
     Note over Server, Database: RPUSH Public:rooms:available <uuid>
     Database-->>Server: Success
 
@@ -90,11 +85,6 @@ sequenceDiagram
     end
 
     rect rgb(50, 0, 0) 
-    Player2->>Server: Enter Site 
-    Note over Player2, Server: GET / 
-    Server-->>Player2: Success
-    Note over Player2, Server: 200 OK <br> HTML/Javascript
-
     Note over Player2, Server: Player2 Joins a Room on Another Thread of the Server
 
     Player2->>Server: Start Game with <br> Random Stranger 
@@ -106,7 +96,7 @@ sequenceDiagram
 
     Server->>Database: Join Available Room
     Note over Server, Database: RPOP Public:Rooms:Available<uuid>
-    Note over Server, Database: HSET Public:room:<uuid> p2SocketID<id>
+    Note over Server, Database: HSET Public:room:<uuid> p2<uuid> <br> gameState 000000000 websocket <ws>
     Database-->>Server: Success
     end
     
