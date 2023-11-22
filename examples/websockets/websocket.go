@@ -20,8 +20,14 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer conn.Close()
+	responseMsg := []byte("Start Game")
+	if err := conn.WriteMessage(websocket.TextMessage, responseMsg); err != nil {
+		log.Println("Error writing message:", err)
+	}
 
 	for {
+		break
+		log.Println("In for loop: ")
 		// Read message from the client
 		_, msg, err := conn.ReadMessage()
 		log.Println("stuff: ")
@@ -36,20 +42,11 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 			log.Printf("counter: %d", counter)
 			log.Println("Message: ", string(msg))
 
-			if counter != -4 {
-				responseMsg := []byte("Waiting for Player")
-				if err := conn.WriteMessage(websocket.TextMessage, responseMsg); err != nil {
-					log.Println("Error writing message:", err)
-					break
-				}
-			} else if counter > 0 {
-				responseMsg := []byte("Start Game")
-				if err := conn.WriteMessage(websocket.TextMessage, responseMsg); err != nil {
-					log.Println("Error writing message:", err)
-					break
-				}
+			responseMsg := []byte("Waiting for Player")
+			if err := conn.WriteMessage(websocket.TextMessage, responseMsg); err != nil {
+				log.Println("Error writing message:", err)
+				break
 			}
-			counter++
 
 		}
 	}

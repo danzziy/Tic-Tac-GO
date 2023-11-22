@@ -2,6 +2,7 @@ package main_test
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"testing"
 
@@ -19,6 +20,8 @@ func TestWebsockets(t *testing.T) {
 		Status(http.StatusSwitchingProtocols).
 		Websocket()
 	defer player1.Close()
+	// player1.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("Start Game")
+
 	player1.WriteText("Join Room").Expect().TextMessage().Body().IsEqual("Waiting for Player")
 
 	player2 := session.GET("/").WithWebsocketUpgrade().Expect().
@@ -26,8 +29,8 @@ func TestWebsockets(t *testing.T) {
 		Websocket()
 	defer player2.Close()
 
-	// player2.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("Start Game")
-	// log.Printf("P1: %v", player1)
-	// log.Printf("P2: %v", player2)
+	player2.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("Start Game")
+	log.Printf("P1: %v", player1)
+	log.Printf("P2: %v", player2)
 
 }

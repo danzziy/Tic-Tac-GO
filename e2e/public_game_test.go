@@ -41,8 +41,26 @@ func TestTicTacGoPublicGame(t *testing.T) {
 	player2.WriteText("Join Room").Expect().TextMessage().Body().IsEqual("Start Game")
 
 	player1.WriteText("000010000")
-	player2.WithoutReadTimeout().Subprotocol().AsBoolean().InList()
+	player2.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("000010000")
 
+	player2.WriteText("200010000")
+	player1.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("200010000")
+
+	player1.WriteText("200110000")
+	player2.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("200110000")
+
+	player2.WriteText("220110000")
+	player1.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("220110000")
+
+	player1.WriteText("220111000")
+	player2.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("220111000")
+
+	player1.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("You Win")
+	player2.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("You Lose")
+
+	player1.WriteText("Quit Game")
+	player1.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("Terminate Connection")
+	player2.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("Terminate Connection")
 }
 
 func initializeGameServer() string {
