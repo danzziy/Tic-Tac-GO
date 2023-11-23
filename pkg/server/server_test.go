@@ -23,9 +23,7 @@ func TestListensForHTTPConnections(t *testing.T) {
 	conn, err := net.Dial("tcp", "127.0.0.1:8080")
 
 	// Assert
-	if err != nil {
-		t.Errorf("Server not reachable on port 8080: %s", err)
-	}
+	assert.NoError(t, err)
 	conn.Close()
 }
 
@@ -39,18 +37,17 @@ func TestStopsListeningForHTTPConnections(t *testing.T) {
 
 	time.Sleep(10 * time.Millisecond)
 
+	// Act
+	_ = server.Stop()
+
 	select {
 	case startErr = <-startChan:
 	case <-time.After(100 * time.Millisecond):
 	}
 
-	// Act
-	_ = server.Stop()
+	_, err := net.Dial("tcp", "127.0.0.1:8080")
 
 	// Assert
-	_, err := net.Dial("tcp", "127.0.0.1:8080")
-	if err == nil {
-		t.Errorf("Server is still reachable on port 8080: %s", err)
-	}
+	assert.Error(t, err)
 	assert.NoError(t, startErr)
 }
