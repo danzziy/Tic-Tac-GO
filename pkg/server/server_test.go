@@ -1,10 +1,13 @@
 package http_server
 
 import (
+	"fmt"
 	"net"
+	"net/http"
 	"testing"
 	"time"
 
+	"github.com/gavv/httpexpect/v2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -50,4 +53,38 @@ func TestStopsListeningForHTTPConnections(t *testing.T) {
 	// Assert
 	assert.Error(t, err)
 	assert.NoError(t, startErr)
+}
+
+// TODO: Actually test that you are providing users with frontend content.
+func TestRetrieveFrontendContent(t *testing.T) {
+	port := 8080
+
+	// Arrange
+	server := NewHTTPServer(8080)
+	go func() { _ = server.Start() }()
+	defer func() { _ = server.Stop() }()
+
+	time.Sleep(10 * time.Millisecond)
+
+	// Act & Assert
+	session := httpexpect.Default(t, fmt.Sprintf("http://127.0.0.1:%d", port))
+	session.GET("/").Expect().Status(http.StatusOK)
+}
+
+func TestUpgradesPublicEndpoitToWebsocketConnection(t *testing.T) {
+	port := 8080
+
+	// Arrange
+	server := NewHTTPServer(8080)
+	go func() { _ = server.Start() }()
+	defer func() { _ = server.Stop() }()
+
+	time.Sleep(10 * time.Millisecond)
+
+	// Act & Assert
+	session := httpexpect.Default(t, fmt.Sprintf("http://127.0.0.1:%d", port))
+	player1 := session.GET("/public").WithWebsocketUpgrade().Expect().
+		Status(http.StatusSwitchingProtocols).
+		Websocket()
+	defer player1.Close()
 }
