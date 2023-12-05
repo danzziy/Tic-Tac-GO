@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"regexp"
 	"tic-tac-go/pkg/manager"
 
 	"github.com/gorilla/websocket"
@@ -28,31 +27,24 @@ func NewHTTPServer(port int, manager manager.Manager) *HTTPServer {
 	http.HandleFunc("/public", func(w http.ResponseWriter, r *http.Request) {
 		conn, _ := upgrader.Upgrade(w, r, nil)
 		defer conn.Close()
-		regex := regexp.MustCompile("^[012]{9}$")
 
-		var jsonMessage wsMessage
-		_ = conn.ReadJSON(&jsonMessage)
-		game, _ := manager.StartGame(jsonMessage.Message)
+		_, message, _ := conn.ReadMessage()
+		game, _ := manager.StartGame(string(message))
 
 		for _, playerID := range game.PlayerIDs {
 			if _, ok := clients[playerID]; !ok {
 				clients[playerID] = conn
 			}
-			clients[playerID].WriteJSON(wsMessage{game.RoomID, playerID, game.Message})
+			clients[playerID].WriteMessage(websocket.TextMessage, []byte(game.Message))
 		}
 
 		for {
-			_ = conn.ReadJSON(&jsonMessage)
+			_, _, _ = conn.ReadMessage()
 
-			switch {
-			case regex.MatchString(jsonMessage.Message):
-				// On successful move send game message to both players using
-				// clients[playerID] to do so. On unsuccessful moves, send
-				// connection to current player using writeJson
-				manager.MakePlayerMove()
-			case jsonMessage.Message == "End Game":
-				manager.EndGame()
-			}
+			// On successful move send game message to both players using
+			// clients[playerID] to do so. On unsuccessful moves, send
+			// connection to current player using writeJson
+			manager.MakePlayerMove()
 		}
 	})
 
@@ -71,10 +63,4 @@ func (s *HTTPServer) Stop() error {
 
 func website(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-}
-
-type wsMessage struct {
-	GameID   string `json:"gameId"`
-	PlayerID string `json:"playerId"`
-	Message  string `json:"message"`
 }

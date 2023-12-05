@@ -125,19 +125,17 @@ func TestPublicEndpoitToWebsocketConnection(t *testing.T) {
 
 	// Assert
 	player1 := session.GET("/public").WithWebsocketUpgrade().Expect().
-		Status(http.StatusSwitchingProtocols).
-		Websocket()
+		Status(http.StatusSwitchingProtocols).Websocket()
 	defer player1.Close()
 
-	player1.WriteJSON(wsMessage{"", "", "Join Room"}).Expect().JSON().IsEqual(wsMessage{roomID, player1ID, "Waiting for Player"})
+	player1.WriteText("Join Room").Expect().TextMessage().Body().IsEqual("Waiting for Player")
 
 	player2 := session.GET("/public").WithWebsocketUpgrade().Expect().
-		Status(http.StatusSwitchingProtocols).
-		Websocket()
+		Status(http.StatusSwitchingProtocols).Websocket()
 	defer player2.Close()
-	player2.WriteJSON(wsMessage{"", "", "Join Room"}).Expect().JSON().IsEqual(wsMessage{roomID, player2ID, "Start Game"})
+	player2.WriteText("Join Room").Expect().TextMessage().Body().IsEqual("Start Game")
 
-	player1.WithoutReadTimeout().Expect().JSON().IsEqual(wsMessage{roomID, player1ID, "Start Game"})
+	player1.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("Start Game")
 
 	gameManager.AssertExpectations(t)
 }
