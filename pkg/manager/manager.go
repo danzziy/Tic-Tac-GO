@@ -1,5 +1,8 @@
 package manager
 
+type Database interface {
+}
+
 type Manager interface {
 	StartGame(message string) (GameRoom, error)
 	MakePlayerMove(roomID string, message string) (GameRoom, error)
@@ -7,10 +10,11 @@ type Manager interface {
 }
 
 type manager struct {
+	database Database
 }
 
-func NewManager() Manager {
-	return &manager{}
+func NewManager(database Database) Manager {
+	return &manager{database}
 }
 
 func (m *manager) StartGame(message string) (GameRoom, error) {
