@@ -8,6 +8,8 @@ import (
 	"github.com/gavv/httpexpect/v2"
 )
 
+// TODO: Check the database has been updated.
+
 // TestTicTacGoPublicGame, given a user wants to play a game with a stranger,
 // then a room will be created where both players will play tic-tac-toe till a
 // winner is chosen.
@@ -38,21 +40,23 @@ func TestTicTacGoPublicGame(t *testing.T) {
 		Status(http.StatusSwitchingProtocols).
 		Websocket()
 	defer player2.Close()
-	player2.WriteText("Join Room").Expect().TextMessage().Body().IsEqual("Start Game")
 
-	player1.WriteText("000010000")
+	player2.WriteText("Join Room").Expect().TextMessage().Body().IsEqual("Start Game")
+	player1.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("Start Game")
+
+	player1.WriteText("000010000").Expect().TextMessage().Body().IsEqual("000010000")
 	player2.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("000010000")
 
-	player2.WriteText("200010000")
+	player2.WriteText("200010000").Expect().TextMessage().Body().IsEqual("200010000")
 	player1.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("200010000")
 
-	player1.WriteText("200110000")
+	player1.WriteText("200110000").Expect().TextMessage().Body().IsEqual("200110000")
 	player2.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("200110000")
 
-	player2.WriteText("220110000")
+	player2.WriteText("220110000").Expect().TextMessage().Body().IsEqual("220110000")
 	player1.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("220110000")
 
-	player1.WriteText("220111000")
+	player1.WriteText("220111000").Expect().TextMessage().Body().IsEqual("220111000")
 	player2.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("220111000")
 
 	player1.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("You Win")

@@ -26,7 +26,6 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for {
-		break
 		log.Println("In for loop: ")
 		// Read message from the client
 		_, msg, err := conn.ReadMessage()
@@ -52,8 +51,34 @@ func handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+var clients []*websocket.Conn
+var num = 0
+
+func publicWebSocket(w http.ResponseWriter, r *http.Request) {
+	conn, _ := upgrader.Upgrade(w, r, nil)
+	defer conn.Close()
+
+	clients = append(clients, conn)
+	num++
+	for {
+		_, msg, _ := conn.ReadMessage()
+
+		switch string(msg) {
+		case "Join Room":
+			if num <= 1 {
+				conn.WriteMessage(websocket.TextMessage, []byte("Waiting for Player"))
+			} else {
+				for _, c := range clients {
+					c.WriteMessage(websocket.TextMessage, []byte("Start Game"))
+				}
+			}
+		}
+	}
+}
+
 func main() {
 	http.HandleFunc("/", handleWebSocket)
+	http.HandleFunc("/public", publicWebSocket)
 
 	port := ":8080"
 	log.Println("Server is running on port", port)
