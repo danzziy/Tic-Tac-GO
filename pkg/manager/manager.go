@@ -1,6 +1,12 @@
 package manager
 
+import (
+	"github.com/google/uuid"
+)
+
 type Database interface {
+	PublicRoomAvailable() bool
+	CreatePublicRoom(roomID string, playerID string) error
 }
 
 type Manager interface {
@@ -18,6 +24,13 @@ func NewManager(database Database) Manager {
 }
 
 func (m *manager) StartGame(message string) (GameRoom, error) {
+	playerID := uuid.NewString()
+	if !m.database.PublicRoomAvailable() {
+		roomID := uuid.NewString()
+
+		_ = m.database.CreatePublicRoom(roomID, playerID)
+		return GameRoom{roomID, []Player{{playerID, "Waiting for Player"}}}, nil
+	}
 	return GameRoom{}, nil
 }
 
