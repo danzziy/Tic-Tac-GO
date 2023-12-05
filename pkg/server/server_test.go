@@ -94,7 +94,7 @@ func TestUpgradesPublicEndpoitToWebsocketConnection(t *testing.T) {
 	defer player1.Close()
 }
 
-func TestPublicEndpoitToWebsocketConnection(t *testing.T) {
+func TestExpectedGameplayForPublicEndpoint(t *testing.T) {
 	port := 8080
 	roomID := uuid.NewString()
 	player1ID := uuid.NewString()
@@ -107,13 +107,37 @@ func TestPublicEndpoitToWebsocketConnection(t *testing.T) {
 
 	gameManager.On("StartGame", "Join Room").Return(
 		manager.GameRoom{
-			RoomID: roomID, PlayerIDs: []string{player1ID}, Message: "Waiting for Player",
+			RoomID: roomID, PlayerIDs: []string{player1ID}, Message: []string{"Waiting for Player"},
 		}, nil,
 	).Once()
 
 	gameManager.On("StartGame", "Join Room").Return(
 		manager.GameRoom{
-			RoomID: roomID, PlayerIDs: []string{player1ID, player2ID}, Message: "Start Game",
+			RoomID: roomID, PlayerIDs: []string{player1ID, player2ID}, Message: []string{"Start Game", "Start Game"},
+		}, nil,
+	).Once()
+
+	gameManager.On("MakePlayerMove", roomID, "022110000").Return(
+		manager.GameRoom{
+			RoomID:    roomID,
+			PlayerIDs: []string{player1ID, player2ID},
+			Message:   []string{"022110000:Ongoing", "022110000:Ongoing"},
+		}, nil,
+	).Once()
+
+	gameManager.On("MakePlayerMove", roomID, "022111000").Return(
+		manager.GameRoom{
+			RoomID:    roomID,
+			PlayerIDs: []string{player1ID, player2ID},
+			Message:   []string{"022111000:Win", "022111000:Lose"},
+		}, nil,
+	).Once()
+
+	gameManager.On("EndGame", roomID).Return(
+		manager.GameRoom{
+			RoomID:    roomID,
+			PlayerIDs: []string{player1ID, player2ID},
+			Message:   []string{"Terminate Connection", "Terminate Connection"},
 		}, nil,
 	).Once()
 
@@ -137,6 +161,15 @@ func TestPublicEndpoitToWebsocketConnection(t *testing.T) {
 
 	player1.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("Start Game")
 
+	player2.WriteText("022110000").Expect().TextMessage().Body().IsEqual("022110000:Ongoing")
+	player1.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("022110000:Ongoing")
+
+	player1.WriteText("022111000").Expect().TextMessage().Body().IsEqual("022111000:Win")
+	player2.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("022111000:Lose")
+
+	player1.WriteText("End Game").Expect().TextMessage().Body().IsEqual("Terminate Connection")
+	player2.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("Terminate Connection")
+
 	gameManager.AssertExpectations(t)
 }
 
@@ -146,12 +179,15 @@ type mockManager struct {
 
 func (m *mockManager) StartGame(message string) (manager.GameRoom, error) {
 	args := m.Called(message)
-
 	return args.Get(0).(manager.GameRoom), args.Error(1)
 }
 
-func (m *mockManager) MakePlayerMove() {
+func (m *mockManager) MakePlayerMove(roomID string, message string) (manager.GameRoom, error) {
+	args := m.Called(roomID, message)
+	return args.Get(0).(manager.GameRoom), args.Error(1)
 }
 
-func (m *mockManager) EndGame() {
+func (m *mockManager) EndGame(roomID string) manager.GameRoom {
+	args := m.Called(roomID)
+	return args.Get(0).(manager.GameRoom)
 }

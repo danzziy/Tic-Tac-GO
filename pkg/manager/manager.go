@@ -2,8 +2,8 @@ package manager
 
 type Manager interface {
 	StartGame(message string) (GameRoom, error)
-	MakePlayerMove()
-	EndGame()
+	MakePlayerMove(roomID string, message string) (GameRoom, error)
+	EndGame(roomID string) GameRoom
 }
 
 type manager struct {
@@ -17,16 +17,16 @@ func (m *manager) StartGame(message string) (GameRoom, error) {
 	return GameRoom{}, nil
 }
 
-func (m *manager) MakePlayerMove() {
-
+func (m *manager) MakePlayerMove(roomID string, message string) (GameRoom, error) {
+	return GameRoom{}, nil
 }
 
-func (m *manager) EndGame() {
-
+func (m *manager) EndGame(roomID string) GameRoom {
+	return GameRoom{}
 }
 
 type GameRoom struct {
 	RoomID    string
 	PlayerIDs []string
-	Message   string
+	Message   []string
 }
