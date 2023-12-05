@@ -107,37 +107,45 @@ func TestExpectedGameplayForPublicEndpoint(t *testing.T) {
 
 	gameManager.On("StartGame", "Join Room").Return(
 		manager.GameRoom{
-			RoomID: roomID, PlayerIDs: []string{player1ID}, Message: []string{"Waiting for Player"},
+			RoomID: roomID, Players: []manager.Player{
+				{ID: player1ID, Message: "Waiting for Player"},
+			},
 		}, nil,
 	).Once()
 
 	gameManager.On("StartGame", "Join Room").Return(
 		manager.GameRoom{
-			RoomID: roomID, PlayerIDs: []string{player1ID, player2ID}, Message: []string{"Start Game", "Start Game"},
+			RoomID: roomID, Players: []manager.Player{
+				{ID: player1ID, Message: "Start Game"},
+				{ID: player2ID, Message: "Start Game"},
+			},
 		}, nil,
 	).Once()
 
 	gameManager.On("MakePlayerMove", roomID, "022110000").Return(
 		manager.GameRoom{
-			RoomID:    roomID,
-			PlayerIDs: []string{player1ID, player2ID},
-			Message:   []string{"022110000:Ongoing", "022110000:Ongoing"},
+			RoomID: roomID, Players: []manager.Player{
+				{ID: player1ID, Message: "022110000:Ongoing"},
+				{ID: player2ID, Message: "022110000:Ongoing"},
+			},
 		}, nil,
 	).Once()
 
 	gameManager.On("MakePlayerMove", roomID, "022111000").Return(
 		manager.GameRoom{
-			RoomID:    roomID,
-			PlayerIDs: []string{player1ID, player2ID},
-			Message:   []string{"022111000:Win", "022111000:Lose"},
+			RoomID: roomID, Players: []manager.Player{
+				{ID: player1ID, Message: "022111000:Win"},
+				{ID: player2ID, Message: "022111000:Lose"},
+			},
 		}, nil,
 	).Once()
 
 	gameManager.On("EndGame", roomID).Return(
 		manager.GameRoom{
-			RoomID:    roomID,
-			PlayerIDs: []string{player1ID, player2ID},
-			Message:   []string{"Terminate Connection", "Terminate Connection"},
+			RoomID: roomID, Players: []manager.Player{
+				{ID: player1ID, Message: "Terminate Connection"},
+				{ID: player2ID, Message: "Terminate Connection"},
+			},
 		}, nil,
 	).Once()
 

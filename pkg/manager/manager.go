@@ -26,7 +26,11 @@ func (m *manager) EndGame(roomID string) GameRoom {
 }
 
 type GameRoom struct {
-	RoomID    string
-	PlayerIDs []string
-	Message   []string
+	RoomID  string
+	Players []Player
+}
+
+type Player struct {
+	ID      string
+	Message string
 }

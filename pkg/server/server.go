@@ -31,11 +31,11 @@ func NewHTTPServer(port int, manager manager.Manager) *HTTPServer {
 
 		_, bytes, _ := conn.ReadMessage()
 		game, _ := manager.StartGame(string(bytes))
-		for i, playerID := range game.PlayerIDs {
-			if _, ok := clients[playerID]; !ok {
-				clients[playerID] = conn
+		for _, player := range game.Players {
+			if _, ok := clients[player.ID]; !ok {
+				clients[player.ID] = conn
 			}
-			clients[playerID].WriteMessage(websocket.TextMessage, []byte(game.Message[i]))
+			clients[player.ID].WriteMessage(websocket.TextMessage, []byte(player.Message))
 		}
 
 		regex := regexp.MustCompile("^[012]{9}$")
@@ -49,14 +49,10 @@ func NewHTTPServer(port int, manager manager.Manager) *HTTPServer {
 			switch {
 			case regex.MatchString(playerMessage):
 				game, _ := manager.MakePlayerMove(game.RoomID, playerMessage)
-				for i, playerID := range game.PlayerIDs {
-					clients[playerID].WriteMessage(websocket.TextMessage, []byte(game.Message[i]))
-				}
+				sendMessageToClients(game)
 			case playerMessage == "End Game":
 				game := manager.EndGame(game.RoomID)
-				for i, playerID := range game.PlayerIDs {
-					clients[playerID].WriteMessage(websocket.TextMessage, []byte(game.Message[i]))
-				}
+				sendMessageToClients(game)
 			}
 		}
 	})
@@ -76,4 +72,10 @@ func (s *HTTPServer) Stop() error {
 
 func website(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
+}
+
+func sendMessageToClients(game manager.GameRoom) {
+	for _, player := range game.Players {
+		clients[player.ID].WriteMessage(websocket.TextMessage, []byte(player.Message))
+	}
 }
