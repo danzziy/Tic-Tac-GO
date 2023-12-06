@@ -19,9 +19,7 @@ func NewConfig(env []string) *config {
 }
 
 func (c config) GetListeningPort() (int, error) {
-
 	env := c.env["LISTENING_PORT"]
 	port, _ := strconv.Atoi(env)
-
 	return port, nil
 }
