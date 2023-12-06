@@ -1,3 +1,7 @@
+// TODO: Update the data structs such that there is only one list of rooms.This list
+will contain both rooms that were generated via the public and private. However, the 
+Public:Rooms:Available list will still exist for the server to use to match make strangers. This
+should simplify the database and manager layers significantly.
 # Tic-Tac-GO
 
 Tic-Tac-GO is a website with a GO backend and a Javascript frontend where people can play 
