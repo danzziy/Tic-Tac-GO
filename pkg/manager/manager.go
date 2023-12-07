@@ -1,11 +1,13 @@
 package manager
 
 import (
+	"log"
+
 	"github.com/google/uuid"
 )
 
 type Analyzer interface {
-	ValidGameState(prevGameState string, playerMove string) (bool, error)
+	ValidMove(prevGameState string, playerMove string) (bool, error)
 	DetermineWinner(playerMove string, players []Player) ([]Player, error)
 }
 
@@ -13,7 +15,7 @@ type Database interface {
 	PublicRoomAvailable() (bool, error)
 	CreatePublicRoom(roomID string, playerID string) error
 	JoinPublicRoom(playerID string) (string, string, error)
-	RetrieveGameState(roomID string) (string, error)
+	RetrieveGame(roomID string) (GameRoom, error)
 	ExecutePlayerMove(roomID string, playerMove string) error
 }
 
@@ -45,7 +47,21 @@ func (m *manager) StartGame(message string) (GameRoom, error) {
 	return GameRoom{roomID, []Player{{opponentID, "Start Game"}, {playerID, "Start Game"}}}, nil
 }
 
-func (m *manager) ExecutePlayerMove(roomID string, message string) (GameRoom, error) {
+// TODO: Consider having another object to store players and gamestate and exclude the message.
+// Perhaps call it a GameRoomState and rename the other to GameRoomMessenger.
+func (m *manager) ExecutePlayerMove(roomID string, playerMove string) (GameRoom, error) {
+	gameRoom, _ := m.database.RetrieveGame(roomID)
+	prevGameState := gameRoom.Players[0].Message
+	log.Printf("sasdfjas;klfjwepi\n\n %s", prevGameState)
+	log.Printf("ALFJASLFasdfsadfdsfadsf %s", playerMove)
+
+	validMove, _ := m.analyzer.ValidMove(prevGameState, playerMove)
+
+	if validMove {
+		_ = m.database.ExecutePlayerMove(roomID, playerMove)
+		players, _ := m.analyzer.DetermineWinner(playerMove, gameRoom.Players)
+		return GameRoom{gameRoom.RoomID, players}, nil
+	}
 	return GameRoom{}, nil
 }
 

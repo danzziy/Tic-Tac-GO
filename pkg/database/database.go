@@ -21,8 +21,8 @@ func (d *database) JoinPublicRoom(playerID string) (string, string, error) {
 	return "", "", nil
 }
 
-func (d *database) RetrieveGameState(roomID string) (string, error) {
-	return "", nil
+func (d *database) RetrieveGame(roomID string) (manager.GameRoom, error) {
+	return manager.GameRoom{}, nil
 }
 
 func (d *database) ExecutePlayerMove(GameRoom string, roomID string) error {

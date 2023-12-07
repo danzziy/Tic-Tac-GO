@@ -1,6 +1,7 @@
 package manager
 
 import (
+	"fmt"
 	"regexp"
 	"testing"
 
@@ -58,61 +59,61 @@ func TestStartGameWhenAPublicRoomIsAvailable(t *testing.T) {
 	database.AssertExpectations(t)
 }
 
-// func TestExecutesPlayerMove(t *testing.T) {
-// 	t.Parallel()
-// 	for _, tc := range []struct {
-// 		playerMove    string
-// 		prevGameState string
-// 		gameRoom      GameRoom
-// 	}{
-// 		{
-// 			"000010000", "000000000", GameRoom{uuid.NewString(), []Player{
-// 				{uuid.NewString(), "000010000:Ongoing"},
-// 				{uuid.NewString(), "000010000:Ongoing"},
-// 			}},
-// 		},
-// 		{
-// 			"022111000", "022110000", GameRoom{uuid.NewString(), []Player{
-// 				{uuid.NewString(), "022111000:Win"},
-// 				{uuid.NewString(), "022111000:Lose"},
-// 			}},
-// 		},
-// 		{
-// 			"222110001", "220110001", GameRoom{uuid.NewString(), []Player{
-// 				{uuid.NewString(), "222110001:Lose"},
-// 				{uuid.NewString(), "222110001:Win"},
-// 			}},
-// 		},
-// 	} {
-// 		tc := tc
-// 		t.Run(fmt.Sprintf("with port %s", tc.playerMove), func(t *testing.T) {
-// 			t.Parallel()
+func TestExecutesPlayerMove(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		prevGameState    string
+		playerMove       string
+		expectedGameRoom GameRoom
+	}{
+		// {
+		// 	"000000000", "000010000", GameRoom{uuid.NewString(), []Player{
+		// 		{uuid.NewString(), "000010000:Ongoing"},
+		// 		{uuid.NewString(), "000010000:Ongoing"},
+		// 	}},
+		// },
+		// {
+		// 	"022110000", "022111000", GameRoom{uuid.NewString(), []Player{
+		// 		{uuid.NewString(), "022111000:Win"},
+		// 		{uuid.NewString(), "022111000:Lose"},
+		// 	}},
+		// },
+		{
+			"220110001", "222110001", GameRoom{uuid.NewString(), []Player{
+				{uuid.NewString(), "222110001:Lose"},
+				{uuid.NewString(), "222110001:Win"},
+			}},
+		},
+	} {
+		tc := tc
+		t.Run(fmt.Sprintf("with port %s", tc.playerMove), func(t *testing.T) {
+			t.Parallel()
 
-// 			players := []Player{
-// 				{tc.gameRoom.Players[0].ID, tc.playerMove},
-// 				{tc.gameRoom.Players[1].ID, tc.playerMove},
-// 			}
+			gameRoom := GameRoom{tc.expectedGameRoom.RoomID, []Player{
+				{tc.expectedGameRoom.Players[0].ID, tc.prevGameState},
+				{tc.expectedGameRoom.Players[1].ID, tc.prevGameState},
+			}}
 
-// 			database := new(mockDatabase)
-// 			analyzer := new(mockAnalyzer)
+			database := new(mockDatabase)
+			analyzer := new(mockAnalyzer)
 
-// 			// Arrange
-// 			database.On("RetrieveGameState", matcher(matchUUID)).Return(tc.prevGameState, nil).Once()
-// 			analyzer.On("ValidGameState", tc.prevGameState, matcher(matchGameBoard)).Return(true, nil).Once()
-// 			database.On("ExecutePlayerMove", matcher(matchUUID), matcher(matchGameBoard)).Return(nil).Once()
-// 			analyzer.On("DetermineWinner", matcher(matchGameBoard), players).Return(tc.gameRoom.Players, nil).Once()
+			// Arrange
+			database.On("RetrieveGame", matcher(matchUUID)).Return(gameRoom, nil).Once()
+			analyzer.On("ValidMove", tc.prevGameState, matcher(matchGameBoard)).Return(true, nil).Once()
+			database.On("ExecutePlayerMove", matcher(matchUUID), matcher(matchGameBoard)).Return(nil).Once()
+			analyzer.On("DetermineWinner", matcher(matchGameBoard), gameRoom.Players).Return(tc.expectedGameRoom.Players, nil).Once()
 
-// 			// Act
-// 			manager := NewManager(database, analyzer)
-// 			actualGameRoom, err := manager.ExecutePlayerMove(tc.gameRoom.RoomID, tc.playerMove)
+			// Act
+			manager := NewManager(database, analyzer)
+			actualGameRoom, err := manager.ExecutePlayerMove(tc.expectedGameRoom.RoomID, tc.playerMove)
 
-// 			// Assert
-// 			assert.NoError(t, err)
-// 			assert.Equal(t, tc.gameRoom, actualGameRoom)
-// 			mock.AssertExpectationsForObjects(t, database, analyzer)
-// 		})
-// 	}
-// }
+			// Assert
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expectedGameRoom, actualGameRoom)
+			mock.AssertExpectationsForObjects(t, database, analyzer)
+		})
+	}
+}
 
 // func TestEndGame(t *testing.T) {
 // 	t.Parallel()
@@ -160,9 +161,9 @@ func (m *mockDatabase) JoinPublicRoom(playerID string) (string, string, error) {
 	return args.String(0), args.String(1), args.Error(2)
 }
 
-func (m *mockDatabase) RetrieveGameState(roomID string) (string, error) {
+func (m *mockDatabase) RetrieveGame(roomID string) (GameRoom, error) {
 	args := m.Called(roomID)
-	return args.String(0), args.Error(1)
+	return args.Get(0).(GameRoom), args.Error(1)
 }
 
 func (m *mockDatabase) ExecutePlayerMove(roomID string, playerMove string) error {
@@ -174,7 +175,7 @@ type mockAnalyzer struct {
 	mock.Mock
 }
 
-func (m *mockAnalyzer) ValidGameState(prevGameState string, playerMove string) (bool, error) {
+func (m *mockAnalyzer) ValidMove(prevGameState string, playerMove string) (bool, error) {
 	args := m.Called(prevGameState, playerMove)
 	return args.Bool(0), args.Error(1)
 }
@@ -195,9 +196,9 @@ func matchUUID(uuid string) bool {
 	return regex.MatchString(uuid)
 }
 
-func matchGameBoard(uuid string) bool {
-	pattern := `"^[012]{9}$"`
+func matchGameBoard(gamestate string) bool {
+	pattern := `^[012]{9}$`
 	regex := regexp.MustCompile(pattern)
 
-	return regex.MatchString(uuid)
+	return regex.MatchString(gamestate)
 }
