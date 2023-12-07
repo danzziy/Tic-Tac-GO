@@ -195,7 +195,7 @@ func (m *mockManager) ExecutePlayerMove(roomID string, message string) (manager.
 	return args.Get(0).(manager.GameRoom), args.Error(1)
 }
 
-func (m *mockManager) EndGame(roomID string) manager.GameRoom {
+func (m *mockManager) EndGame(roomID string) (manager.GameRoom, error) {
 	args := m.Called(roomID)
-	return args.Get(0).(manager.GameRoom)
+	return args.Get(0).(manager.GameRoom), args.Error(1)
 }

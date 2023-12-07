@@ -66,18 +66,18 @@ func TestExecutesPlayerMove(t *testing.T) {
 		playerMove       string
 		expectedGameRoom GameRoom
 	}{
-		// {
-		// 	"000000000", "000010000", GameRoom{uuid.NewString(), []Player{
-		// 		{uuid.NewString(), "000010000:Ongoing"},
-		// 		{uuid.NewString(), "000010000:Ongoing"},
-		// 	}},
-		// },
-		// {
-		// 	"022110000", "022111000", GameRoom{uuid.NewString(), []Player{
-		// 		{uuid.NewString(), "022111000:Win"},
-		// 		{uuid.NewString(), "022111000:Lose"},
-		// 	}},
-		// },
+		{
+			"000000000", "000010000", GameRoom{uuid.NewString(), []Player{
+				{uuid.NewString(), "000010000:Ongoing"},
+				{uuid.NewString(), "000010000:Ongoing"},
+			}},
+		},
+		{
+			"022110000", "022111000", GameRoom{uuid.NewString(), []Player{
+				{uuid.NewString(), "022111000:Win"},
+				{uuid.NewString(), "022111000:Lose"},
+			}},
+		},
 		{
 			"220110001", "222110001", GameRoom{uuid.NewString(), []Player{
 				{uuid.NewString(), "222110001:Lose"},
@@ -86,7 +86,7 @@ func TestExecutesPlayerMove(t *testing.T) {
 		},
 	} {
 		tc := tc
-		t.Run(fmt.Sprintf("with port %s", tc.playerMove), func(t *testing.T) {
+		t.Run(fmt.Sprintf("with player move %s", tc.playerMove), func(t *testing.T) {
 			t.Parallel()
 
 			gameRoom := GameRoom{tc.expectedGameRoom.RoomID, []Player{
@@ -115,32 +115,35 @@ func TestExecutesPlayerMove(t *testing.T) {
 	}
 }
 
-// func TestEndGame(t *testing.T) {
-// 	t.Parallel()
+func TestEndGame(t *testing.T) {
+	t.Parallel()
 
-// 	roomID := uuid.NewString()
-// 	player1ID := uuid.NewString()
+	roomID := uuid.NewString()
+	player1ID := uuid.NewString()
+	player2ID := uuid.NewString()
 
-// 	database := new(mockDatabase)
+	expectedGameRoom := GameRoom{
+		roomID, []Player{{player1ID, "Terminate Connection"}, {player2ID, "Terminate Connection"}},
+	}
 
-// 	// Arrange
-// 	database.On("PublicRoomAvailable").Return(true, nil).Once()
-// 	database.On("JoinPublicRoom", matcher(matchUUID)).Return(roomID, player1ID, nil).Once()
+	database := new(mockDatabase)
 
-// 	// Act
-// 	manager := NewManager(database)
-// 	actualGameRoom := manager.EndGame(roomID)
+	// Arrange
+	// TODO: You should definitely have a data struct dedicated to retrieving gameRooms.
+	// and another for communicating to the clients. Because, it makes no sense for
+	// RetrieveGame to return a GameRoom that contains player messages.
+	database.On("RetrieveGame", matcher(matchUUID)).Return(GameRoom{roomID, []Player{{player1ID, ""}, {player2ID, ""}}}, nil).Once()
+	database.On("DeleteGameRoom", matcher(matchUUID)).Return(nil).Once()
 
-// 	expectedGameRoom := GameRoom{roomID, []Player{
-// 		{player1ID, "Start Game"},
-// 		{database.Calls[1].Arguments.String(0), "Start Game"},
-// 	}}
+	// Act
+	manager := NewManager(database, nil)
+	actualGameRoom, err := manager.EndGame(roomID)
 
-// 	// Assert
-// 	assert.NoError(t, err)
-// 	assert.Equal(t, expectedGameRoom, actualGameRoom)
-// 	database.AssertExpectations(t)
-// }
+	// Assert
+	assert.NoError(t, err)
+	assert.Equal(t, expectedGameRoom, actualGameRoom)
+	database.AssertExpectations(t)
+}
 
 type mockDatabase struct {
 	mock.Mock
@@ -168,6 +171,11 @@ func (m *mockDatabase) RetrieveGame(roomID string) (GameRoom, error) {
 
 func (m *mockDatabase) ExecutePlayerMove(roomID string, playerMove string) error {
 	args := m.Called(roomID, playerMove)
+	return args.Error(0)
+}
+
+func (m *mockDatabase) DeleteGameRoom(roomID string) error {
+	args := m.Called(roomID)
 	return args.Error(0)
 }
 

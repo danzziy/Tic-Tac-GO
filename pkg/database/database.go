@@ -28,3 +28,7 @@ func (d *database) RetrieveGame(roomID string) (manager.GameRoom, error) {
 func (d *database) ExecutePlayerMove(GameRoom string, roomID string) error {
 	return nil
 }
+
+func (d *database) DeleteGameRoom(roomID string) error {
+	return nil
+}

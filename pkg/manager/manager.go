@@ -1,8 +1,6 @@
 package manager
 
 import (
-	"log"
-
 	"github.com/google/uuid"
 )
 
@@ -17,12 +15,13 @@ type Database interface {
 	JoinPublicRoom(playerID string) (string, string, error)
 	RetrieveGame(roomID string) (GameRoom, error)
 	ExecutePlayerMove(roomID string, playerMove string) error
+	DeleteGameRoom(roomID string) error
 }
 
 type Manager interface {
 	StartGame(message string) (GameRoom, error)
 	ExecutePlayerMove(roomID string, message string) (GameRoom, error)
-	EndGame(roomID string) GameRoom
+	EndGame(roomID string) (GameRoom, error)
 }
 
 type manager struct {
@@ -52,8 +51,6 @@ func (m *manager) StartGame(message string) (GameRoom, error) {
 func (m *manager) ExecutePlayerMove(roomID string, playerMove string) (GameRoom, error) {
 	gameRoom, _ := m.database.RetrieveGame(roomID)
 	prevGameState := gameRoom.Players[0].Message
-	log.Printf("sasdfjas;klfjwepi\n\n %s", prevGameState)
-	log.Printf("ALFJASLFasdfsadfdsfadsf %s", playerMove)
 
 	validMove, _ := m.analyzer.ValidMove(prevGameState, playerMove)
 
@@ -65,8 +62,14 @@ func (m *manager) ExecutePlayerMove(roomID string, playerMove string) (GameRoom,
 	return GameRoom{}, nil
 }
 
-func (m *manager) EndGame(roomID string) GameRoom {
-	return GameRoom{}
+func (m *manager) EndGame(roomID string) (GameRoom, error) {
+	gameRoom, _ := m.database.RetrieveGame(roomID)
+	_ = m.database.DeleteGameRoom(roomID)
+
+	gameRoom.Players[0].Message = "Terminate Connection"
+	gameRoom.Players[1].Message = "Terminate Connection"
+
+	return gameRoom, nil
 }
 
 type GameRoom struct {

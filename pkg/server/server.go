@@ -51,7 +51,7 @@ func NewHTTPServer(port int, manager manager.Manager) *HTTPServer {
 				game, _ := manager.ExecutePlayerMove(game.RoomID, playerMessage)
 				sendMessageToClients(game)
 			case playerMessage == "End Game":
-				game := manager.EndGame(game.RoomID)
+				game, _ := manager.EndGame(game.RoomID)
 				sendMessageToClients(game)
 			}
 		}
