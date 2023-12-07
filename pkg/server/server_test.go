@@ -122,7 +122,7 @@ func TestExpectedGameplayForPublicEndpoint(t *testing.T) {
 		}, nil,
 	).Once()
 
-	gameManager.On("MakePlayerMove", roomID, "022110000").Return(
+	gameManager.On("ExecutePlayerMove", roomID, "022110000").Return(
 		manager.GameRoom{
 			RoomID: roomID, Players: []manager.Player{
 				{ID: player1ID, Message: "022110000:Ongoing"},
@@ -131,7 +131,7 @@ func TestExpectedGameplayForPublicEndpoint(t *testing.T) {
 		}, nil,
 	).Once()
 
-	gameManager.On("MakePlayerMove", roomID, "022111000").Return(
+	gameManager.On("ExecutePlayerMove", roomID, "022111000").Return(
 		manager.GameRoom{
 			RoomID: roomID, Players: []manager.Player{
 				{ID: player1ID, Message: "022111000:Win"},
@@ -190,7 +190,7 @@ func (m *mockManager) StartGame(message string) (manager.GameRoom, error) {
 	return args.Get(0).(manager.GameRoom), args.Error(1)
 }
 
-func (m *mockManager) MakePlayerMove(roomID string, message string) (manager.GameRoom, error) {
+func (m *mockManager) ExecutePlayerMove(roomID string, message string) (manager.GameRoom, error) {
 	args := m.Called(roomID, message)
 	return args.Get(0).(manager.GameRoom), args.Error(1)
 }

@@ -48,7 +48,7 @@ func NewHTTPServer(port int, manager manager.Manager) *HTTPServer {
 
 			switch {
 			case regex.MatchString(playerMessage):
-				game, _ := manager.MakePlayerMove(game.RoomID, playerMessage)
+				game, _ := manager.ExecutePlayerMove(game.RoomID, playerMessage)
 				sendMessageToClients(game)
 			case playerMessage == "End Game":
 				game := manager.EndGame(game.RoomID)
