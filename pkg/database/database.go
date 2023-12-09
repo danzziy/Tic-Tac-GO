@@ -55,7 +55,8 @@ func (d *database) RetrieveGame(roomID string) (manager.GameRoom, error) {
 	}}, nil
 }
 
-func (d *database) ExecutePlayerMove(GameRoom string, roomID string) error {
+func (d *database) ExecutePlayerMove(roomID string, playerMove string) error {
+	_ = d.redis.HSet(ctx, fmt.Sprintf("Room:%s", roomID), "gameState", playerMove)
 	return nil
 }
 

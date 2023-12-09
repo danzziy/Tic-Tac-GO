@@ -115,3 +115,29 @@ func TestRetrieveGame(t *testing.T) {
 		Players: []manager.Player{{ID: player1ID, Message: "000000000"}, {ID: player2ID, Message: "000000000"}},
 	}, actualGameRoom)
 }
+
+func TestExecutePlayerMove(t *testing.T) {
+	t.Parallel()
+
+	roomID := uuid.NewString()
+	playerMove := "000010000"
+
+	player1ID := uuid.NewString()
+	player2ID := uuid.NewString()
+
+	db := miniredis.RunT(t)
+	defer db.Close()
+
+	// Arrange
+	db.HSet(fmt.Sprintf("Room:%s", roomID), "player1ID", player1ID, "player2ID", player2ID, "gameState", "000000000")
+
+	// Act
+	database := NewDatabase(db.Addr(), "")
+	err := database.ExecutePlayerMove(roomID, playerMove)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.Equal(t, db.HGet(fmt.Sprintf("Room:%s", roomID), "player1ID"), player1ID)
+	assert.Equal(t, db.HGet(fmt.Sprintf("Room:%s", roomID), "player2ID"), player2ID)
+	assert.Equal(t, db.HGet(fmt.Sprintf("Room:%s", roomID), "gameState"), "000010000")
+}
