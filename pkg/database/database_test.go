@@ -141,3 +141,25 @@ func TestExecutePlayerMove(t *testing.T) {
 	assert.Equal(t, db.HGet(fmt.Sprintf("Room:%s", roomID), "player2ID"), player2ID)
 	assert.Equal(t, db.HGet(fmt.Sprintf("Room:%s", roomID), "gameState"), "000010000")
 }
+
+func TestDeleteGameRoom(t *testing.T) {
+	t.Parallel()
+
+	roomID := uuid.NewString()
+	player1ID := uuid.NewString()
+	player2ID := uuid.NewString()
+
+	db := miniredis.RunT(t)
+	defer db.Close()
+
+	// Arrange
+	db.HSet(fmt.Sprintf("Room:%s", roomID), "player1ID", player1ID, "player2ID", player2ID, "gameState", "000000000")
+
+	// Act
+	database := NewDatabase(db.Addr(), "")
+	err := database.DeleteGameRoom(roomID)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.False(t, db.Exists(fmt.Sprintf("Room:%s", roomID)))
+}

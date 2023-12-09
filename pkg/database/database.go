@@ -61,5 +61,6 @@ func (d *database) ExecutePlayerMove(roomID string, playerMove string) error {
 }
 
 func (d *database) DeleteGameRoom(roomID string) error {
+	d.redis.Del(ctx, fmt.Sprintf("Room:%s", roomID))
 	return nil
 }
