@@ -40,7 +40,10 @@ func (d *database) CreatePublicRoom(roomID string, playerID string) error {
 }
 
 func (d *database) JoinPublicRoom(playerID string) (string, string, error) {
-	return "", "", nil
+	roomID, _ := d.redis.RPop(ctx, "Public:Rooms:Available").Result()
+	opponentID, _ := d.redis.HGet(ctx, fmt.Sprintf("Room:%s", roomID), "player1ID").Result()
+	d.redis.HSet(ctx, fmt.Sprintf("Room:%s", roomID), "player2ID", playerID, "gameState", "000000000")
+	return roomID, opponentID, nil
 }
 
 func (d *database) RetrieveGame(roomID string) (manager.GameRoom, error) {

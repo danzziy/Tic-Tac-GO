@@ -60,3 +60,33 @@ func TestCreatePublicRoom(t *testing.T) {
 	db.CheckList(t, "Public:Rooms:Available", roomID)
 	assert.Equal(t, db.HGet(fmt.Sprintf("Room:%s", roomID), "player1ID"), playerID)
 }
+
+func TestJoinPublicRoom(t *testing.T) {
+	t.Parallel()
+
+	roomID := uuid.NewString()
+	player1ID := uuid.NewString()
+	player2ID := uuid.NewString()
+
+	db := miniredis.RunT(t)
+	defer db.Close()
+
+	// Arrange
+	db.Lpush("Public:Rooms:Available", roomID)
+	// Player2 are always the ones joining, player1 creates the room.
+	db.HSet(fmt.Sprintf("Room:%s", roomID), "player1ID", player1ID)
+
+	// Act
+	database := NewDatabase(db.Addr(), "")
+	// Player2 are always the ones joining, player1 creates the room.
+	actualRoomID, actualPlayer1ID, err := database.JoinPublicRoom(player2ID)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.False(t, db.Exists("Public:Rooms:Available"))
+	assert.Equal(t, roomID, actualRoomID)
+	assert.Equal(t, player1ID, actualPlayer1ID)
+	assert.Equal(t, db.HGet(fmt.Sprintf("Room:%s", roomID), "player1ID"), player1ID)
+	assert.Equal(t, db.HGet(fmt.Sprintf("Room:%s", roomID), "player2ID"), player2ID)
+	assert.Equal(t, db.HGet(fmt.Sprintf("Room:%s", roomID), "gameState"), "000000000")
+}
