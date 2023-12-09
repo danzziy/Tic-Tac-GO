@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"testing"
+	"tic-tac-go/pkg/manager"
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
@@ -89,4 +90,28 @@ func TestJoinPublicRoom(t *testing.T) {
 	assert.Equal(t, db.HGet(fmt.Sprintf("Room:%s", roomID), "player1ID"), player1ID)
 	assert.Equal(t, db.HGet(fmt.Sprintf("Room:%s", roomID), "player2ID"), player2ID)
 	assert.Equal(t, db.HGet(fmt.Sprintf("Room:%s", roomID), "gameState"), "000000000")
+}
+
+func TestRetrieveGame(t *testing.T) {
+	t.Parallel()
+
+	roomID := uuid.NewString()
+	player1ID := uuid.NewString()
+	player2ID := uuid.NewString()
+
+	db := miniredis.RunT(t)
+	defer db.Close()
+
+	// Arrange
+	db.HSet(fmt.Sprintf("Room:%s", roomID), "player1ID", player1ID, "player2ID", player2ID, "gameState", "000000000")
+
+	// Act
+	database := NewDatabase(db.Addr(), "")
+	actualGameRoom, err := database.RetrieveGame(roomID)
+
+	// Assert
+	assert.NoError(t, err)
+	assert.Equal(t, manager.GameRoom{RoomID: roomID,
+		Players: []manager.Player{{ID: player1ID, Message: "000000000"}, {ID: player2ID, Message: "000000000"}},
+	}, actualGameRoom)
 }

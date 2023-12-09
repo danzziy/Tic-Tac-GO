@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"log"
 	"tic-tac-go/pkg/manager"
 
 	"github.com/redis/go-redis/v9"
@@ -47,7 +48,11 @@ func (d *database) JoinPublicRoom(playerID string) (string, string, error) {
 }
 
 func (d *database) RetrieveGame(roomID string) (manager.GameRoom, error) {
-	return manager.GameRoom{}, nil
+	room, _ := d.redis.HGetAll(ctx, fmt.Sprintf("Room:%s", roomID)).Result()
+	log.Printf("Game: %v", room)
+	return manager.GameRoom{RoomID: roomID, Players: []manager.Player{
+		{ID: room["player1ID"], Message: room["gameState"]}, {ID: room["player2ID"], Message: room["gameState"]},
+	}}, nil
 }
 
 func (d *database) ExecutePlayerMove(GameRoom string, roomID string) error {
