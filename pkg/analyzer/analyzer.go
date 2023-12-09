@@ -2,7 +2,7 @@ package analyzer
 
 import (
 	"fmt"
-	"log"
+	"strings"
 	"tic-tac-go/pkg/manager"
 )
 
@@ -14,6 +14,7 @@ func NewAnalyzer() manager.Analyzer {
 }
 
 func (a *analyzer) ValidMove(prevGameState string, playerMove string) (bool, error) {
+	// TODO: If the length is not 9 there should be an error.
 	if len(prevGameState) != 9 || len(playerMove) != 9 || prevGameState == playerMove {
 		return false, nil
 	}
@@ -44,122 +45,59 @@ func (a *analyzer) ValidMove(prevGameState string, playerMove string) (bool, err
 }
 
 func (a *analyzer) DetermineWinner(playerMove string, players []manager.Player) ([]manager.Player, error) {
+	players[0].Message = fmt.Sprintf("%s:Ongoing", playerMove)
+	players[1].Message = fmt.Sprintf("%s:Ongoing", playerMove)
+
+	if rowsContainAWinner(playerMove, &players) || columnsContainAWinner(playerMove, &players) ||
+		diagonalsContainAWinner(playerMove, &players) {
+		return players, nil
+	} else if !strings.Contains(playerMove, "0") {
+		players[0].Message = fmt.Sprintf("%s:Tie", playerMove)
+		players[1].Message = fmt.Sprintf("%s:Tie", playerMove)
+		return players, nil
+	}
+
+	return players, nil
+}
+
+func rowsContainAWinner(playerMove string, players *[]manager.Player) bool {
 	for i := 0; i < 9; i += 3 {
-		if playerMove[i:i+3] == "111" {
-			players[0].Message = fmt.Sprintf("%s:Win", playerMove)
-			players[1].Message = fmt.Sprintf("%s:Lose", playerMove)
-			return players, nil
-		} else if playerMove[i:i+3] == "222" {
-			players[0].Message = fmt.Sprintf("%s:Lose", playerMove)
-			players[1].Message = fmt.Sprintf("%s:Win", playerMove)
-			return players, nil
+		if isAWinningSegment(playerMove[i:i+3], playerMove, players) {
+			return true
 		}
 	}
+	return false
+}
+
+func columnsContainAWinner(playerMove string, players *[]manager.Player) bool {
 	for i := 0; i < 3; i++ {
 		verticalLine := fmt.Sprintf("%c%c%c", playerMove[i], playerMove[i+3], playerMove[i+6])
-		log.Printf("VErtical: %s", verticalLine)
-
-		if verticalLine == "111" {
-			players[0].Message = fmt.Sprintf("%s:Win", playerMove)
-			players[1].Message = fmt.Sprintf("%s:Lose", playerMove)
-			return players, nil
-		} else if verticalLine == "222" {
-			players[0].Message = fmt.Sprintf("%s:Lose", playerMove)
-			players[1].Message = fmt.Sprintf("%s:Win", playerMove)
-			return players, nil
+		if isAWinningSegment(verticalLine, playerMove, players) {
+			return true
 		}
 	}
+	return false
+}
+
+func diagonalsContainAWinner(playerMove string, players *[]manager.Player) bool {
 	for i := 0; i <= 2; i += 2 {
 		diagonalLine := fmt.Sprintf("%c%c%c", playerMove[i], playerMove[4], playerMove[8-i])
-		log.Printf("%s", diagonalLine)
-		if diagonalLine == "111" {
-			players[0].Message = fmt.Sprintf("%s:Win", playerMove)
-			players[1].Message = fmt.Sprintf("%s:Lose", playerMove)
-			return players, nil
-		} else if diagonalLine == "222" {
-			players[0].Message = fmt.Sprintf("%s:Lose", playerMove)
-			players[1].Message = fmt.Sprintf("%s:Win", playerMove)
-			return players, nil
+		if isAWinningSegment(diagonalLine, playerMove, players) {
+			return true
 		}
 	}
-	players[0].Message = fmt.Sprintf("%s:Ongoing", playerMove)
-	players[1].Message = fmt.Sprintf("%s:Ongoing", playerMove)
-	return players, nil
-
-	checkHorizontalLines(playerMove, players)
-	checkVerticalLines(playerMove, players)
-	checkDiagonalLines(playerMove, players)
-	players[0].Message = fmt.Sprintf("%s:Ongoing", playerMove)
-	players[1].Message = fmt.Sprintf("%s:Ongoing", playerMove)
-
-	return []manager.Player{}, nil
+	return false
 }
 
-func checkHorizontalLines(playerMove string, players []manager.Player) []manager.Player {
-	for i := 0; i < 9; i += 3 {
-		if playerMove[i:i+3] == "111" {
-			players[0].Message = fmt.Sprintf("%s:Win", playerMove)
-			players[1].Message = fmt.Sprintf("%s:Lose", playerMove)
-			return players
-		} else if playerMove[i:i+3] == "222" {
-			players[0].Message = fmt.Sprintf("%s:Lose", playerMove)
-			players[1].Message = fmt.Sprintf("%s:Win", playerMove)
-			return players
-		}
+func isAWinningSegment(line string, playerMove string, players *[]manager.Player) bool {
+	if line == "111" {
+		(*players)[0].Message = fmt.Sprintf("%s:Win", playerMove)
+		(*players)[1].Message = fmt.Sprintf("%s:Lose", playerMove)
+		return true
+	} else if line == "222" {
+		(*players)[0].Message = fmt.Sprintf("%s:Lose", playerMove)
+		(*players)[1].Message = fmt.Sprintf("%s:Win", playerMove)
+		return true
 	}
-	players[0].Message = fmt.Sprintf("%s:Ongoing", playerMove)
-	players[1].Message = fmt.Sprintf("%s:Ongoing", playerMove)
-	return players
+	return false
 }
-
-func checkVerticalLines(playerMove string, players []manager.Player) []manager.Player {
-	for i := 0; i < 3; i++ {
-		verticalLine := fmt.Sprintf("%c%c%c", playerMove[i], playerMove[i+3], playerMove[i+6])
-		log.Printf("VErtical: %s", verticalLine)
-
-		if verticalLine == "111" {
-			players[0].Message = fmt.Sprintf("%s:Win", playerMove)
-			players[1].Message = fmt.Sprintf("%s:Lose", playerMove)
-			return players
-		} else if verticalLine == "222" {
-			players[0].Message = fmt.Sprintf("%s:Lose", playerMove)
-			players[1].Message = fmt.Sprintf("%s:Win", playerMove)
-			return players
-		}
-	}
-	players[0].Message = fmt.Sprintf("%s:Ongoing", playerMove)
-	players[1].Message = fmt.Sprintf("%s:Ongoing", playerMove)
-	return players
-}
-
-func checkDiagonalLines(playerMove string, players []manager.Player) []manager.Player {
-	for i := 0; i <= 2; i += 2 {
-		diagonalLine := fmt.Sprintf("%c%c%c", playerMove[i], playerMove[4], playerMove[i+6])
-		log.Printf("%s", diagonalLine)
-		if diagonalLine == "111" {
-			players[0].Message = fmt.Sprintf("%s:Win", playerMove)
-			players[1].Message = fmt.Sprintf("%s:Lose", playerMove)
-			return players
-		} else if diagonalLine == "222" {
-			players[0].Message = fmt.Sprintf("%s:Lose", playerMove)
-			players[1].Message = fmt.Sprintf("%s:Win", playerMove)
-			return players
-		}
-	}
-	players[0].Message = fmt.Sprintf("%s:Ongoing", playerMove)
-	players[1].Message = fmt.Sprintf("%s:Ongoing", playerMove)
-	return players
-}
-
-// func determinSegmentWinner(line string, playerMove string, players []manager.Player) []manager.Player {
-// 	if line == "111" {
-// 		players[0].Message = fmt.Sprintf("%s:Win", playerMove)
-// 		players[1].Message = fmt.Sprintf("%s:Lose", playerMove)
-// 		return players
-// 	} else if line == "222" {
-// 		players[0].Message = fmt.Sprintf("%s:Lose", playerMove)
-// 		players[1].Message = fmt.Sprintf("%s:Win", playerMove)
-// 		return players
-// 	}
-// 	return players
-// }
