@@ -45,9 +45,6 @@ func (a *analyzer) ValidMove(prevGameState string, playerMove string) (bool, err
 }
 
 func (a *analyzer) DetermineWinner(playerMove string, players []manager.Player) ([]manager.Player, error) {
-	players[0].Message = fmt.Sprintf("%s:Ongoing", playerMove)
-	players[1].Message = fmt.Sprintf("%s:Ongoing", playerMove)
-
 	if rowsContainAWinner(playerMove, &players) || columnsContainAWinner(playerMove, &players) ||
 		diagonalsContainAWinner(playerMove, &players) {
 		return players, nil
@@ -57,6 +54,8 @@ func (a *analyzer) DetermineWinner(playerMove string, players []manager.Player) 
 		return players, nil
 	}
 
+	players[0].Message = fmt.Sprintf("%s:Ongoing", playerMove)
+	players[1].Message = fmt.Sprintf("%s:Ongoing", playerMove)
 	return players, nil
 }
 
