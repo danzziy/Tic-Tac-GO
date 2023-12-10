@@ -22,6 +22,7 @@ func (a *analyzer) ValidMove(prevGameState string, playerMove string) (bool, err
 	ones := 0
 	twos := 0
 
+	moves := 0
 	for i := 0; i < len(prevGameState); i++ {
 		if playerMove[i] == '1' {
 			ones++
@@ -30,8 +31,9 @@ func (a *analyzer) ValidMove(prevGameState string, playerMove string) (bool, err
 		}
 
 		if prevGameState[i] != playerMove[i] {
+			moves++
 			// Valid move: From '0' (empty) to '1' or '2' (player marker)
-			if prevGameState[i] == '1' && playerMove[i] == '2' || prevGameState[i] == '2' && playerMove[i] == '1' {
+			if prevGameState[i] == '1' && playerMove[i] == '2' || prevGameState[i] == '2' && playerMove[i] == '1' || moves > 1 {
 				return false, nil // Invalid move
 			}
 		}
