@@ -159,7 +159,6 @@ func TestExpectedGameplayForPublicEndpoint(t *testing.T) {
 	player1 := session.GET("/public").WithWebsocketUpgrade().Expect().
 		Status(http.StatusSwitchingProtocols).Websocket()
 	defer player1.Close()
-
 	player1.WriteText("Join Room").Expect().TextMessage().Body().IsEqual("Waiting for Player")
 
 	player2 := session.GET("/public").WithWebsocketUpgrade().Expect().
