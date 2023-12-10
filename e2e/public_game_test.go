@@ -4,7 +4,13 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+	"tic-tac-go/pkg/analyzer"
+	"tic-tac-go/pkg/config"
+	"tic-tac-go/pkg/database"
+	"tic-tac-go/pkg/manager"
+	game "tic-tac-go/pkg/server"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/gavv/httpexpect/v2"
 )
 
@@ -21,11 +27,15 @@ func TestTicTacGoPublicGame(t *testing.T) {
 	// Make game moves until player1 wins.
 	port := 8080
 	session := httpexpect.Default(t, fmt.Sprintf("http://127.0.0.1:%d", port))
+	db := miniredis.RunT(t)
+	defer db.Close()
 
 	// Arrange
 
 	// Act
-	_ = initializeGameServer()
+	server := initializeGameServer(db.Addr())
+	go func() { _ = server.Start() }()
+	defer func() { _ = server.Stop() }()
 
 	// Assert
 	session.GET("/").Expect().Status(http.StatusOK)
@@ -44,29 +54,34 @@ func TestTicTacGoPublicGame(t *testing.T) {
 	player2.WriteText("Join Room").Expect().TextMessage().Body().IsEqual("Start Game")
 	player1.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("Start Game")
 
-	player1.WriteText("000010000").Expect().TextMessage().Body().IsEqual("000010000")
-	player2.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("000010000")
+	player1.WriteText("000010000").Expect().TextMessage().Body().IsEqual("000010000:Ongoing")
+	player2.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("000010000:Ongoing")
 
-	player2.WriteText("200010000").Expect().TextMessage().Body().IsEqual("200010000")
-	player1.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("200010000")
+	player2.WriteText("200010000").Expect().TextMessage().Body().IsEqual("200010000:Ongoing")
+	player1.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("200010000:Ongoing")
 
-	player1.WriteText("200110000").Expect().TextMessage().Body().IsEqual("200110000")
-	player2.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("200110000")
+	player1.WriteText("200110000").Expect().TextMessage().Body().IsEqual("200110000:Ongoing")
+	player2.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("200110000:Ongoing")
 
-	player2.WriteText("220110000").Expect().TextMessage().Body().IsEqual("220110000")
-	player1.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("220110000")
+	player2.WriteText("220110000").Expect().TextMessage().Body().IsEqual("220110000:Ongoing")
+	player1.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("220110000:Ongoing")
 
-	player1.WriteText("220111000").Expect().TextMessage().Body().IsEqual("220111000")
-	player2.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("220111000")
+	player1.WriteText("220111000").Expect().TextMessage().Body().IsEqual("220111000:Win")
+	player2.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("220111000:Lose")
 
-	player1.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("You Win")
-	player2.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("You Lose")
-
-	player1.WriteText("Quit Game")
+	player1.WriteText("End Game")
 	player1.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("Terminate Connection")
 	player2.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("Terminate Connection")
 }
 
-func initializeGameServer() string {
-	return ""
+func initializeGameServer(dbAddr string) *game.HTTPServer {
+	env := config.NewConfig(
+		[]string{"LISTENING_PORT=8080", fmt.Sprintf("DATABASE_HOST=%s", dbAddr), "DATABASE_PASSWORD=something"},
+	)
+	port, _ := env.ListeningPort()
+	databaseHost, _ := env.DatabaseHost()
+	databasePassword, _ := env.DatabasePassword()
+	return game.NewHTTPServer(port, manager.NewManager(
+		database.NewDatabase(databaseHost, databasePassword), analyzer.NewAnalyzer()),
+	)
 }
