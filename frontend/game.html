@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tic Tac Toe</title>
+  <style>
+    /* Add your CSS styles for the Tic Tac Toe board here */
+    /* This is a basic example of styling for the board */
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-gap: 5px;
+    }
+    .cell {
+      width: 100px;
+      height: 100px;
+      border: 1px solid black;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2em;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <button id="startButton">Start Game</button>
+  <div class="board" style="display: none;">
+    <div class="cell" data-index="0"></div>
+    <div class="cell" data-index="1"></div>
+    <div class="cell" data-index="2"></div>
+    <div class="cell" data-index="3"></div>
+    <div class="cell" data-index="4"></div>
+    <div class="cell" data-index="5"></div>
+    <div class="cell" data-index="6"></div>
+    <div class="cell" data-index="7"></div>
+    <div class="cell" data-index="8"></div>
+  </div>
+
+  <script type="module">
+    import { io } from "https://cdn.socket.io/4.7.2/socket.io.esm.min.js";
+
+    const startButton = document.getElementById('startButton');
+    const board = document.querySelector('.board');
+    const cells = document.querySelectorAll('.cell');
+
+    var playerNumber = 2
+    var playerMove = '000000000'
+    startButton.addEventListener('click', () => {
+      // const websocket = new WebSocket('ws://localhost:8080/public');
+      const socket = new WebSocket('ws://localhost:8080/public');
+
+      socket.onopen = function(event) {
+        console.log('WebSocket connection established.');
+
+        // You can perform actions here upon successful connection
+        // For example, sending a 'Join Room' message
+        socket.send('Join Room');
+      };
+
+      socket.onmessage = function(event) {
+        const message = event.data;
+        console.log('Received message from server:', message);
+
+        // Handle incoming messages from the server
+        if (message === 'Start Game') {
+          // Perform actions when the game starts
+          board.style.display = 'grid';
+        }
+        else if (message === "Waiting for Player") {
+          playerNumber = 1
+        } else {
+          console.log("else")
+          var indexOfColon = message.indexOf(':');
+          playerMove = message.substring(0, indexOfColon)
+          cells.forEach((cell, i) => {
+            if(playerMove[i] != 0){
+              cell.textContent = playerMove[i]
+              console.log("playermove[i]: " + playerMove[i])
+            }
+          })
+        }
+
+      };
+
+      socket.onerror = function(error) {
+        console.error('WebSocket encountered an error:', error);
+      };
+
+      socket.onclose = function(event) {
+        console.log('WebSocket connection closed.');
+        // You can handle actions upon WebSocket close here
+      };
+
+      cells.forEach(cell => {
+        cell.addEventListener('click', () => {
+          if (cell.textContent === '') {
+            const position = Array.from(cells).indexOf(cell);
+            const message = playerMove.substring(0, position) + playerNumber + playerMove.substring(position + 1);
+            cell.textContent = playerNumber
+            socket.send(message);
+          }
+        });
+      });
+    });
+   
+  </script>
+</body>
+</html>
