@@ -21,6 +21,10 @@ type HTTPServer struct {
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		// Allow all origins for WebSocket connections
+		return true
+	},
 }
 
 func NewHTTPServer(port int, manager manager.Manager) *HTTPServer {
