@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	server := initializeGameServer("")
+	server := initializeGameServer("127.0.0.1:6379")
 	_ = server.Start()
 	defer func() { _ = server.Stop() }()
 }

@@ -1,0 +1,47 @@
+body{
+    background:   radial-gradient(circle farthest-side at var(--x, 100px) var(--y, 100px), rgb(150,20,0) 0%, rgb(0,20,205) 100%);
+    background-size: 200%;
+
+    height: 100vh;
+    width: 100vw;
+
+    overflow: hidden;
+    margin: 0px;
+}
+ 
+#tiles {
+    height: calc(100vh - 1px);
+    width: calc(100vw - 1px);
+
+    display: grid;
+    grid-template-columns: repeat(var(--columns), 1fr);
+    grid-template-rows: repeat(var(--rows), 1fr);
+}
+
+.tile{
+    border-style: solid;
+    border-width: thin;
+    background-color: black;
+    border-color: transparent;
+    background-clip: padding-box;
+}
+
+@font-face {
+    font-family: '8bit'; /* Font family name */
+    src: url("./1up.ttf") /* URL to the font file */
+}
+
+.centered-div {
+    padding: 20px;
+    border-radius: 5px;
+    font-family: '8bit';
+    font-size: 150px;
+    color: white;
+    position: fixed;
+    z-index: 1;
+
+    justify-content: center;
+    align-items: center;
+    transform: translate(30%, 40%);
+    /* Optional: Modify styles to fit your design */
+  }
