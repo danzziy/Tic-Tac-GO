@@ -48,6 +48,8 @@ func (m *manager) StartGame(message string) (GameRoom, error) {
 
 // TODO: Consider having another object to store players and gamestate and exclude the message.
 // Perhaps call it a GameRoomState and rename the other to GameRoomMessenger.
+// TODO: If an opponent sends a websocket message prior to the current players turn, they could hijack
+// their opponents move. Perhaps have each user send in their ids to verify themselves.
 func (m *manager) ExecutePlayerMove(roomID string, playerMove string) (GameRoom, error) {
 	gameRoom, _ := m.database.RetrieveGame(roomID)
 	prevGameState := gameRoom.Players[0].Message
