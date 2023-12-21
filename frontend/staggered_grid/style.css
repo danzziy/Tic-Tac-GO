@@ -1,5 +1,5 @@
 body{
-    background:   radial-gradient(circle farthest-side at var(--x, 100px) var(--y, 100px), rgb(150,20,0) 0%, rgb(0,20,205) 100%);
+    background:   radial-gradient(circle farthest-side at var(--x, 100px) var(--y, 100px), rgb(200,20,0) 0%, rgb(0,50,255) 100%);
     background-size: 200%;
 
     height: 100vh;
@@ -43,5 +43,6 @@ body{
     justify-content: center;
     align-items: center;
     transform: translate(30%, 40%);
-    /* Optional: Modify styles to fit your design */
-  }
+    pointer-events: none;
+
+}
