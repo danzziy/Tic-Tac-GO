@@ -1,39 +1,41 @@
 <template>
     <div class="board">
-        <button v-for="(cell, index) in cells" :key="index" @click="handleClick(index)">
+        <button v-for="(cell, index) in cells" :key="index" @click="handleClick(index)" :textContent="playerNumber">
             {{ cell }}
         </button>
     </div>
 </template>
 
 <script>
-import { inject } from 'vue';
+import WS from './Websocket.vue'
 
 export default {
     // reactive state
     name: 'Board',
+    props: {
+        playerNumber: Number,
+        socket: null
+    },
     data() {
         return {
             cells: Array(9).fill(''), // Represents the cells of the board
         };
     },
-    setup() {
-        const webSocket = inject('webSocket');
-
-        if (webSocket) {
-            webSocket.onmessage = (event) => {
-                console.log('Received message:', event.data);
-            };
-        }
-         return {};
-    },
     // lifecycle hooks
     mounted() {
-        console.log(`The initial count is.`)
+        if (WS) {
+            WS.onmessage = (event) => {
+                console.log("From Board.vue: " + event.data);
+            };
+        } else {
+            console.error('Socket not available');
+        }
     },
     methods: {
         handleClick(index) {
             console.log(index)
+            console.log("PlayerNumber: " + this.playerNumber)
+            WS.send("000010000")
         },
     },
 }

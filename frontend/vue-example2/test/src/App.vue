@@ -1,20 +1,16 @@
 <template>
-    <!-- <div>
-        <Board></Board>
-        <Button text="Test" color="green"/>
-    </div> -->
     <div>
-        <div id="home_page" v-if="page=='home_page'">
+        <div id="home_page" v-if="page === 'Home Page'"> 
             <div class="centered-div">TIC-TAC-GO</div>            
             <Button @click="startGame" text="Start Game" />
         </div>
 
-        <div v-else-if="page=='Waiting for Player'">
+        <div v-else-if="page === 'Waiting for Player'">
             <div class="centered-div">Loading...</div>
         </div>
 
-        <div v-else-if="page=='Start Game'">
-            <Board />
+        <div v-else-if="page === 'Start Game'">
+            <Board :playerNumber="playerNumber"/>
         </div>
   </div>
 </template>
@@ -22,47 +18,49 @@
 <script>
 import Board from './components/Board.vue'
 import Button from './components/Button.vue'
-import { ref, provide } from 'vue';
+import WS from './components/Websocket.vue'
 
 export default {
     // reactive state
     name: 'App',
     components: {
         Board,
-        Button, // Ensure that 'Board' is added here
+        Button,
     },
-    
-    setup() {
-        let webSocket = null;
-        let page=ref('')
-        page.value = 'home_page'
-        const startGame = async () => {
-            webSocket = new WebSocket('ws://localhost:8081/public');
-            provide('webSocket', webSocket);
-
-            webSocket.onopen = (event) => {
-                console.log('WebSocket connection established.');
-
-                // You can perform actions here upon successful connection
-                // For example, sending a 'Join Room' message
-                webSocket.send('Join Room');
-            };
-
-            webSocket.onmessage = (event) => {
-                page.value = event.data;
-                console.log("From app.vue: " + page.value);
-            }
-            webSocket.onerror = (error) => {
-                console.error('WebSocket error:', error);
-            };
-            webSocket.onclose = () => {
-                console.log('WebSocket connection closed');
-                connected.value = false;
-            };
+    data() {
+        return{
+            page:  "Home Page",
+            playerNumber: 0,
+        }
+    },
+    mounted() {
+        WS.onopen = (event) => {
+            console.log('WebSocket connection established.');
         };
-        
-        return{startGame, page};
+
+        WS.onmessage = (event) => {
+            this.page = event.data;
+            
+            console.log("From app.vue: " + this.page);
+            if( this.playerNumber == 0 && this.page == 'Start Game'){
+                this.playerNumber = 2
+            } else {
+                this.playerNumber = 1
+            }
+        }
+        WS.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
+        WS.onclose = () => {
+            console.log('WebSocket connection closed');
+            // connected.value = false;
+        };
     },
+    methods: {
+        async startGame() {
+           WS.send("Join Room")
+        }
+    }
 }
 </script>
 
