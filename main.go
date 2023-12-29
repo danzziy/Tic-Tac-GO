@@ -17,7 +17,7 @@ func main() {
 
 func initializeGameServer(dbAddr string) *game.HTTPServer {
 	env := config.NewConfig(
-		[]string{"LISTENING_PORT=8080", fmt.Sprintf("DATABASE_HOST=%s", dbAddr), "DATABASE_PASSWORD=something"},
+		[]string{"LISTENING_PORT=8081", fmt.Sprintf("DATABASE_HOST=%s", dbAddr), "DATABASE_PASSWORD=something"},
 	)
 	port, _ := env.ListeningPort()
 	databaseHost, _ := env.DatabaseHost()
