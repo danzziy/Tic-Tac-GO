@@ -27,23 +27,3 @@ body{
     border-color: transparent;
     background-clip: padding-box;
 }
-
-@font-face {
-    font-family: '8bit'; /* Font family name */
-    src: url("./1up.ttf") /* URL to the font file */
-}
-
-.centered-div {
-    padding: 20px;
-    border-radius: 5px;
-    font-family: '8bit';
-    font-size: 150px;
-    color: white;
-    position: fixed;
-
-    justify-content: center;
-    align-items: center;
-    transform: translate(30%, 40%);
-    pointer-events: none;
-
-}

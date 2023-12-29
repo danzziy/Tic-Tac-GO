@@ -7,14 +7,25 @@
 </template>
 
 <script>
+import { inject } from 'vue';
+
 export default {
     // reactive state
     name: 'Board',
     data() {
         return {
             cells: Array(9).fill(''), // Represents the cells of the board
-            currentPlayer: 'X', // Initial player (can be 'X' or 'O')
         };
+    },
+    setup() {
+        const webSocket = inject('webSocket');
+
+        if (webSocket) {
+            webSocket.onmessage = (event) => {
+                console.log('Received message:', event.data);
+            };
+        }
+         return {};
     },
     // lifecycle hooks
     mounted() {
@@ -23,29 +34,29 @@ export default {
     methods: {
         handleClick(index) {
             console.log(index)
-        }
-    }
+        },
+    },
 }
 </script>
 
 <style scope>
-    .board {
-      display: grid;
-      grid-template-columns: repeat(3, 100px);
-      grid-gap: 0px;
-      position: relative;
-      pointer-events: all;
-    }
+.board {
+    display: grid;
+    grid-template-columns: repeat(3, 100px);
+    grid-gap: 0px;
+    position: relative;
+    pointer-events: all;
+}
 
-    .board button {
-      width: 100px;
-      height: 100px;
-      background: transparent;
-      border: 1px solid white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2em;
-      cursor: pointer;
-    }
+.board button {
+    width: 100px;
+    height: 100px;
+    background: transparent;
+    border: 1px solid white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2em;
+    cursor: pointer;
+}
 </style>
