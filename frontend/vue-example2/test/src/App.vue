@@ -10,7 +10,12 @@
         </div>
 
         <div v-else-if="page === 'Start Game'">
-            <Board :playerNumber="playerNumber"/>
+            <Board  @game-over="gameOver" :playerNumber="playerNumber"/>
+        </div>
+
+        <div v-else-if="page === 'Game Over'">
+            <div class="centered-div">{{ playerOutcome }}</div>
+            <Button @click="startGame" text="End Game" />
         </div>
   </div>
 </template>
@@ -31,6 +36,7 @@ export default {
         return{
             page:  "Home Page",
             playerNumber: 0,
+            playerOutcome: '',
         }
     },
     mounted() {
@@ -39,6 +45,7 @@ export default {
         };
 
         WS.onmessage = (event) => {
+            console.log("APP VUE")
             this.page = event.data;
             
             console.log("From app.vue: " + this.page);
@@ -59,6 +66,10 @@ export default {
     methods: {
         async startGame() {
            WS.send("Join Room")
+        },
+        gameOver(gameOverMessage) {
+            this.page = 'Game Over';
+            this.playerOutcome = gameOverMessage;
         }
     }
 }
@@ -66,7 +77,7 @@ export default {
 
 <style>
 div {
-    position: relative;
+        position: relative;
 }
 @font-face {
     font-family: '8bit'; /* Font family name */
