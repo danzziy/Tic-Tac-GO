@@ -22,21 +22,24 @@ export default {
             gameState: '000000000',
         };
     },
-    // lifecycle hooks
     mounted() {
         if (WS) {
             WS.onmessage = (event) => {
                 console.log("From Board.vue: " + event.data);
                 var indexOfColon = event.data.indexOf(':');
-                var playerMove = event.data.substring(0, indexOfColon);
-                this.gameState = playerMove;
+                var newGameState = event.data.substring(0, indexOfColon);
+                this.gameState = newGameState;
                 this.cells.forEach((cell, i) => {
-                    if(playerMove[i] != 0){
-                        this.cells[i]= playerMove[i];
-                        console.log("playermove[i]: " + playerMove[i]);
+                    var playerMove = "X"
+                    if(newGameState[i] == 2) {
+                        playerMove = "O"
+                    }
+                    if(newGameState[i] != 0){
+                        this.cells[i]= playerMove;
+                        console.log("newGameState[i]: " + newGameState[i]);
                     }
                 })
-                if(event.data.includes('Win') || event.data.includes('Lose')) {
+                if(!event.data.includes('Ongoing')) {
                     var gameOverMessage = `You ${event.data.substring(indexOfColon + 1)}`;
                     console.log("GAME OVER: " + gameOverMessage)
                     this.$emit('game-over', gameOverMessage);
@@ -54,6 +57,10 @@ export default {
             }
         },
     },
+    beforeUnmount() {
+        // Set WS.onmessage to null to remove the previously assigned function
+        WS.onmessage = null;
+    },
 }
 </script>
 
@@ -64,6 +71,10 @@ export default {
     grid-gap: 0px;
     position: relative;
     pointer-events: all;
+    justify-content: center;
+    align-items: center;
+    transform: translate(0%, 50%); 
+
 }
 
 .board button {
