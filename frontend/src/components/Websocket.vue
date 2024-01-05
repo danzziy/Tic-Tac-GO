@@ -11,7 +11,6 @@ WS.onerror = (error) => {
 
 WS.onclose = () => {
     console.log('WebSocket connection closed');
-    // connected.value = false;
 };
 export default WS;
 </script>
