@@ -55,6 +55,7 @@ func NewHTTPServer(port int, manager manager.Manager) *HTTPServer {
 				game, _ := manager.ExecutePlayerMove(game.RoomID, playerMessage)
 				sendMessageToClients(game)
 			case playerMessage == "End Game":
+				// TODO: Fix logic after users end the game, they should be able to start a new one.
 				game, _ := manager.EndGame(game.RoomID)
 				sendMessageToClients(game)
 			}
