@@ -4,7 +4,6 @@ let columns = Math.floor(document.body.clientWidth / 50),
 
 const wrapper = document.getElementById("tiles");
 
-// const colors = ["rgba(0,20,205,.5)", "rgba(150,20,0,.5)"]
 
 var count = -1
 const handleOnClick = index => {
@@ -12,18 +11,11 @@ const handleOnClick = index => {
    
     anime({
         targets: ".tile",
-        // borderColor:   colors[count % colors.length],
-
         delay: anime.stagger(50, {
             grid: [columns, rows],
             from: index
         }),
         scale: [{ value: [1, 0.9], duration: 500}, { value: 1, duration: 1000, easing: 'easeInOutElastic(1, .9)'}],
-        // rotate: {
-        //     value: [0, 360],
-        //     duration: 500,
-        //     easing: 'easeInOutSine'
-        // },
     })
 }
 
@@ -62,6 +54,7 @@ createGrid();
 window.onresize = () => createGrid();
 
 const body = document.body;
+
 onmousemove = (e) => {
     let {x, y} = e;
     body.style.setProperty("--x", `${x}px`);
