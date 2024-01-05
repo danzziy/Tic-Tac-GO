@@ -180,6 +180,8 @@ func TestExpectedGameplayForPublicEndpoint(t *testing.T) {
 	gameManager.AssertExpectations(t)
 }
 
+// TODO: Test that the gameroom does not exist after termination. And a new game room can be started.
+
 type mockManager struct {
 	mock.Mock
 }

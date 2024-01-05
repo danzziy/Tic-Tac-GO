@@ -46,6 +46,9 @@ func TestInValidMoves(t *testing.T) {
 		// {"000020000", "000120000"}, I would like this condition to result in a fail but it will never happen so I won't implement it.
 		{"000010000", "000110000"}, // Too many ones
 		{"000210000", "000212000"}, // Too many twos
+		{"000210000", "000211100"}, // Too many moves
+		{"000210000", "00021220"},  // Too many moves
+		{"000210000", "000212100"}, // Too many moves
 		{"000010000", "000020000"}, // Overwrite
 	} {
 		tc := tc
