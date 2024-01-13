@@ -175,7 +175,7 @@ func TestExpectedGameplayForPublicEndpoint(t *testing.T) {
 	player2.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("022111000:Lose")
 
 	player1.WriteText("End Game").Expect().TextMessage().Body().IsEqual("Terminate Connection")
-	player2.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("Terminate Connecton")
+	player2.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("Terminate Connection")
 
 	gameManager.AssertExpectations(t)
 }
