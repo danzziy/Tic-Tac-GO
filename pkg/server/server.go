@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"tic-tac-go/pkg/manager"
 
+	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 )
 
@@ -28,8 +29,9 @@ var upgrader = websocket.Upgrader{
 }
 
 func NewHTTPServer(port int, manager manager.Manager) *HTTPServer {
-	http.HandleFunc("/", website)
-	http.HandleFunc("/public", func(w http.ResponseWriter, r *http.Request) {
+	router := mux.NewRouter()
+
+	router.HandleFunc("/public", func(w http.ResponseWriter, r *http.Request) {
 		conn, _ := upgrader.Upgrade(w, r, nil)
 		defer conn.Close()
 
@@ -55,14 +57,14 @@ func NewHTTPServer(port int, manager manager.Manager) *HTTPServer {
 				game, _ := manager.ExecutePlayerMove(game.RoomID, playerMessage)
 				sendMessageToClients(game)
 			case playerMessage == "End Game":
-				// TODO: Fix logic after users end the game, they should be able to start a new one.
+				// TODO: Fix logic, after users end the game, they should be able to start a new one.
 				game, _ := manager.EndGame(game.RoomID)
 				sendMessageToClients(game)
 			}
 		}
 	})
 
-	return &HTTPServer{&http.Server{Addr: fmt.Sprintf("127.0.0.1:%d", port)}}
+	return &HTTPServer{&http.Server{Addr: fmt.Sprintf("127.0.0.1:%d", port), Handler: router}}
 }
 
 func (s *HTTPServer) Start() error {
@@ -73,10 +75,6 @@ func (s *HTTPServer) Start() error {
 func (s *HTTPServer) Stop() error {
 	s.server.Shutdown(context.Background())
 	return nil
-}
-
-func website(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
 }
 
 func sendMessageToClients(game manager.GameRoom) {

@@ -2,6 +2,7 @@ package http_server
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"testing"
@@ -18,27 +19,32 @@ import (
 // 		 into your server.
 
 func TestListensForHTTPConnections(t *testing.T) {
+	t.Parallel()
+	port := findAvailablePort()
+
 	// Arrange
-	server := NewHTTPServer(8080, nil)
+	server := NewHTTPServer(port, nil)
 	go func() { _ = server.Start() }()
 	defer func() { _ = server.Stop() }()
 
 	time.Sleep(10 * time.Millisecond)
 
 	// Act
-	conn, err := net.Dial("tcp", "127.0.0.1:8080")
+	conn, err := net.Dial("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+	defer func() { _ = conn.Close() }()
 
 	// Assert
 	assert.NoError(t, err)
-	conn.Close()
 }
 
 func TestStopsListeningForHTTPConnections(t *testing.T) {
+	t.Parallel()
+	port := findAvailablePort()
 	startChan := make(chan error)
 	startErr := assert.AnError
 
 	// Arrange
-	server := NewHTTPServer(8080, nil)
+	server := NewHTTPServer(port, nil)
 	go func() { startChan <- server.Start() }()
 
 	time.Sleep(10 * time.Millisecond)
@@ -51,37 +57,22 @@ func TestStopsListeningForHTTPConnections(t *testing.T) {
 	case <-time.After(100 * time.Millisecond):
 	}
 
-	_, err := net.Dial("tcp", "127.0.0.1:8080")
+	_, err := net.Dial("tcp", fmt.Sprintf("127.0.0.1:%d", port))
 
 	// Assert
 	assert.Error(t, err)
 	assert.NoError(t, startErr)
 }
 
-// TODO: Actually test that you are providing users with frontend content.
-func TestRetrieveFrontendContent(t *testing.T) {
-	port := 8080
-
-	// Arrange
-	server := NewHTTPServer(8080, nil)
-	go func() { _ = server.Start() }()
-	defer func() { _ = server.Stop() }()
-
-	time.Sleep(10 * time.Millisecond)
-
-	// Act & Assert
-	session := httpexpect.Default(t, fmt.Sprintf("http://127.0.0.1:%d", port))
-	session.GET("/").Expect().Status(http.StatusOK)
-}
-
 func TestUpgradesPublicEndpoitToWebsocketConnection(t *testing.T) {
-	port := 8080
+	t.Parallel()
+	port := findAvailablePort()
 
 	// Arrange
 	session := httpexpect.Default(t, fmt.Sprintf("http://127.0.0.1:%d", port))
 
 	// Act
-	server := NewHTTPServer(8080, nil)
+	server := NewHTTPServer(port, nil)
 	go func() { _ = server.Start() }()
 	defer func() { _ = server.Stop() }()
 
@@ -95,7 +86,8 @@ func TestUpgradesPublicEndpoitToWebsocketConnection(t *testing.T) {
 }
 
 func TestExpectedGameplayForPublicEndpoint(t *testing.T) {
-	port := 8080
+	t.Parallel()
+	port := findAvailablePort()
 	roomID := uuid.NewString()
 	player1ID := uuid.NewString()
 	player2ID := uuid.NewString()
@@ -150,7 +142,7 @@ func TestExpectedGameplayForPublicEndpoint(t *testing.T) {
 	).Once()
 
 	// Act
-	server := NewHTTPServer(8080, gameManager)
+	server := NewHTTPServer(port, gameManager)
 	go func() { _ = server.Start() }()
 	defer func() { _ = server.Stop() }()
 	time.Sleep(10 * time.Millisecond)
@@ -199,4 +191,15 @@ func (m *mockManager) ExecutePlayerMove(roomID string, message string) (manager.
 func (m *mockManager) EndGame(roomID string) (manager.GameRoom, error) {
 	args := m.Called(roomID)
 	return args.Get(0).(manager.GameRoom), args.Error(1)
+}
+
+func findAvailablePort() int {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		panic("Error finding available port")
+	}
+	defer listener.Close()
+	port := listener.Addr().(*net.TCPAddr).Port
+	log.Printf("PORT %d", port)
+	return listener.Addr().(*net.TCPAddr).Port
 }
