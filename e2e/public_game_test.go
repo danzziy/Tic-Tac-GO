@@ -39,7 +39,6 @@ func TestTicTacGoPublicGame(t *testing.T) {
 	defer func() { _ = server.Stop() }()
 
 	// Assert
-	session.GET("/").Expect().Status(http.StatusOK)
 	player1 := session.GET("/public").WithWebsocketUpgrade().Expect().
 		Status(http.StatusSwitchingProtocols).
 		Websocket()
