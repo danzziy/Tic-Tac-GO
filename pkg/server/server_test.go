@@ -15,9 +15,6 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// TODO: If you want to run your tests in parrallel, you have to find available ports and pass that
-// 		 into your server.
-
 func TestListensForHTTPConnections(t *testing.T) {
 	t.Parallel()
 	port := test.FindAvailablePort()
