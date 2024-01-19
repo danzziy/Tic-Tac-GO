@@ -9,6 +9,7 @@ import (
 	"tic-tac-go/pkg/database"
 	"tic-tac-go/pkg/manager"
 	game "tic-tac-go/pkg/server"
+	"tic-tac-go/pkg/test"
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/gavv/httpexpect/v2"
@@ -25,7 +26,7 @@ func TestTicTacGoPublicGame(t *testing.T) {
 	// Player2 connects to server via websocket sending Join Room Message
 	// Player1 and Player2 should now recieve a Start Game Message
 	// Make game moves until player1 wins.
-	port := 8080
+	port := test.FindAvailablePort()
 	session := httpexpect.Default(t, fmt.Sprintf("http://127.0.0.1:%d", port))
 	db := miniredis.RunT(t)
 	defer db.Close()

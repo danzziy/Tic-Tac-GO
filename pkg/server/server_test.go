@@ -2,11 +2,11 @@ package http_server
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"testing"
 	"tic-tac-go/pkg/manager"
+	"tic-tac-go/pkg/test"
 	"time"
 
 	"github.com/gavv/httpexpect/v2"
@@ -20,7 +20,7 @@ import (
 
 func TestListensForHTTPConnections(t *testing.T) {
 	t.Parallel()
-	port := findAvailablePort()
+	port := test.FindAvailablePort()
 
 	// Arrange
 	server := NewHTTPServer(port, nil)
@@ -39,7 +39,7 @@ func TestListensForHTTPConnections(t *testing.T) {
 
 func TestStopsListeningForHTTPConnections(t *testing.T) {
 	t.Parallel()
-	port := findAvailablePort()
+	port := test.FindAvailablePort()
 	startChan := make(chan error)
 	startErr := assert.AnError
 
@@ -66,7 +66,7 @@ func TestStopsListeningForHTTPConnections(t *testing.T) {
 
 func TestUpgradesPublicEndpoitToWebsocketConnection(t *testing.T) {
 	t.Parallel()
-	port := findAvailablePort()
+	port := test.FindAvailablePort()
 
 	// Arrange
 	session := httpexpect.Default(t, fmt.Sprintf("http://127.0.0.1:%d", port))
@@ -87,7 +87,7 @@ func TestUpgradesPublicEndpoitToWebsocketConnection(t *testing.T) {
 
 func TestExpectedGameplayForPublicEndpoint(t *testing.T) {
 	t.Parallel()
-	port := findAvailablePort()
+	port := test.FindAvailablePort()
 	roomID := uuid.NewString()
 	player1ID := uuid.NewString()
 	player2ID := uuid.NewString()
@@ -191,15 +191,4 @@ func (m *mockManager) ExecutePlayerMove(roomID string, message string) (manager.
 func (m *mockManager) EndGame(roomID string) (manager.GameRoom, error) {
 	args := m.Called(roomID)
 	return args.Get(0).(manager.GameRoom), args.Error(1)
-}
-
-func findAvailablePort() int {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		panic("Error finding available port")
-	}
-	defer listener.Close()
-	port := listener.Addr().(*net.TCPAddr).Port
-	log.Printf("PORT %d", port)
-	return listener.Addr().(*net.TCPAddr).Port
 }
