@@ -1,7 +1,3 @@
-// TODO: Update the data structs such that there is only one list of rooms.This list
-will contain both rooms that were generated via the public and private. However, the 
-Public:Rooms:Available list will still exist for the server to use to match make strangers. This
-should simplify the database and manager layers significantly.
 # Tic-Tac-GO
 
 Tic-Tac-GO is a website with a GO backend and a Javascript frontend where people can play 
@@ -40,24 +36,27 @@ them.
 
 ### Public Rooms
 
-Below is a list that contains the IDs of all of the available rooms that a new player can join.
+Below is a list that contains the IDs of all of the available public rooms that a player can join.
+When a publi room is created, it's ID is added to the below list.
 
 ```
-Rooms:Available [<uuid1>, <uuid2>, <uuid3>]
+Public:Rooms:Available [<uuid1>, <uuid2>, <uuid3>]
 ```
 
-The below hash will be used to keep track of the state of the game in a room.
+The below hash will be used to keep track of the state of the game in a room. Players will be
+automatically assigned to the first room that is available which from the above list.
 
 ```
-Public:Room:<uuid> p1SocketID <id> p2SocketID <id> gameState <base3>
+Room:<uuid> p1SocketID <id> p2SocketID <id> gameState <base3>
 ```
 
 ### Private Rooms
 
-Private rooms will only have the below hash associated with it.
+Private rooms will only have the below hash associated with it, this hash will act as the key used
+to have two friends play within the same room.
 
 ```
-Private:Room:<uuid> p1SocketID <id> p2SocketID <id> gameState <base3>
+Room:<uuid> p1SocketID <id> p2SocketID <id> gameState <base3>
 ```
 
 ### Public Game Sequence Diagram
@@ -77,12 +76,12 @@ sequenceDiagram
     Note over Player1, Server: ws/public <br> Initialize WS Connection <br> Message: Join Room
 
     Server->>Database: Is a Public Room Available
-    Note over Server, Database: LLEN Rooms:Available<uuid>
+    Note over Server, Database: LLEN PUblic:Rooms:Available<uuid>
     Database-->>Server: No Rooms Available
 
     Server->>Database: Create Available Public Room
-    Note over Server, Database: HSET Public:Room:<uuid> p1SocketID <br> gameState 000000000
-    Note over Server, Database: RPUSH Rooms:available <uuid>
+    Note over Server, Database: Room:<uuid> p1SocketID <br> gameState 000000000
+    Note over Server, Database: RPUSH Public:Rooms:Available <uuid>
     Database-->>Server: Success
 
     Server->>Player1: Success
@@ -102,7 +101,7 @@ sequenceDiagram
 
     Server->>Database: Join Available Room
     Note over Server, Database: RPOP Public:Rooms:Available<uuid>
-    Note over Server, Database: HSET Public:Room:<uuid> p2SocketID<id>
+    Note over Server, Database: HSET Room:<uuid> p2SocketID<id>
     Database-->>Server: Success
     end
     
@@ -115,7 +114,7 @@ sequenceDiagram
     Player1->>Server: Make Move
     Note over Player1, Server: ws/public <br> Message: 000010000
     Server->>Database: Make Move
-    Note over Server, Database: HSET Public:Room:<uuid> <br> gameState 000010000
+    Note over Server, Database: HSET Room:<uuid> <br> gameState 000010000
     Database-->>Server: Success
     Server->>Player2: Update Game State
     Note over Server, Player2: ws/public <br> Message: 000010000
@@ -123,7 +122,7 @@ sequenceDiagram
     Player2->>Server: Make Move
     Note over Player2, Server: ws/public <br> Message: 002010000
     Server->>Database: Make Move
-    Note over Server, Database: HSET Public:Room:<uuid> <br> gameState 002010000
+    Note over Server, Database: HSET Room:<uuid> <br> gameState 002010000
     Database-->>Server: Success
     Server->>Player1: Update Game State
     Note over Server, Player1: ws/public <br> Message: 002010000
@@ -132,7 +131,7 @@ sequenceDiagram
     Player1->>Server: Make Move
     Note over Player1, Server: ws/public <br> Message: 022111000
     Server->>Database: Make Move
-    Note over Server, Database: HSET Public:Room:<uuid> <br> gameState 022111000
+    Note over Server, Database: HSET Room:<uuid> <br> gameState 022111000
     Database-->>Server: Success
     Server->>Player1: Player1 Wins
     Note over Player1, Server: ws/public <br> Message: You Win
@@ -142,7 +141,7 @@ sequenceDiagram
     Player1->>Server: Quit Game
     Note over Player1, Server: ws/public <br> Message: Quit Game
     Server->>Database: Terminate Game
-    Note over Server, Database: DEL Public:Room:<uuid>
+    Note over Server, Database: DEL Room:<uuid>
     Database-->>Server: Success
     Server->>Player1: Terminate Connection
     Note over Server, Player1: ws/public <br> Message: Terminate Connection 
