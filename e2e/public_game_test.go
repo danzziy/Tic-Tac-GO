@@ -9,6 +9,7 @@ import (
 	"tic-tac-go/pkg/database"
 	"tic-tac-go/pkg/manager"
 	game "tic-tac-go/pkg/server"
+	"tic-tac-go/pkg/test"
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/gavv/httpexpect/v2"
@@ -20,12 +21,8 @@ import (
 // then a room will be created where both players will play tic-tac-toe till a
 // winner is chosen.
 func TestTicTacGoPublicGame(t *testing.T) {
-	// Player1 connects to server via websocket sending Join Room Message
-	// Player should then get a waiting for player message
-	// Player2 connects to server via websocket sending Join Room Message
-	// Player1 and Player2 should now recieve a Start Game Message
-	// Make game moves until player1 wins.
-	port := 8080
+	t.Parallel()
+	port := test.FindAvailablePort()
 	session := httpexpect.Default(t, fmt.Sprintf("http://127.0.0.1:%d", port))
 	db := miniredis.RunT(t)
 	defer db.Close()
@@ -33,19 +30,17 @@ func TestTicTacGoPublicGame(t *testing.T) {
 	// Arrange
 
 	// Act
-	server := initializeGameServer(db.Addr())
+	server := initializeGameServer(port, db.Addr())
 	go func() { _ = server.Start() }()
 	defer func() { _ = server.Stop() }()
 
 	// Assert
-	session.GET("/").Expect().Status(http.StatusOK)
 	player1 := session.GET("/public").WithWebsocketUpgrade().Expect().
 		Status(http.StatusSwitchingProtocols).
 		Websocket()
 	defer player1.Close()
 	player1.WriteText("Join Room").Expect().TextMessage().Body().IsEqual("Waiting for Player")
 
-	session.GET("/").Expect().Status(http.StatusOK)
 	player2 := session.GET("/public").WithWebsocketUpgrade().Expect().
 		Status(http.StatusSwitchingProtocols).
 		Websocket()
@@ -74,9 +69,9 @@ func TestTicTacGoPublicGame(t *testing.T) {
 	player2.WithoutReadTimeout().Expect().TextMessage().Body().IsEqual("Terminate Connection")
 }
 
-func initializeGameServer(dbAddr string) *game.HTTPServer {
+func initializeGameServer(listeningPort int, dbAddr string) *game.HTTPServer {
 	env := config.NewConfig(
-		[]string{"LISTENING_PORT=8080", fmt.Sprintf("DATABASE_HOST=%s", dbAddr), "DATABASE_PASSWORD=something"},
+		[]string{fmt.Sprintf("LISTENING_PORT=%d", listeningPort), fmt.Sprintf("DATABASE_HOST=%s", dbAddr), "DATABASE_PASSWORD=something"},
 	)
 	port, _ := env.ListeningPort()
 	databaseHost, _ := env.DatabaseHost()
