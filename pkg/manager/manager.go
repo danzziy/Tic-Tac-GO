@@ -12,7 +12,7 @@ type Analyzer interface {
 type Database interface {
 	PublicRoomAvailable() (bool, error)
 	CreatePublicRoom(roomID string, playerID string) error
-	JoinPublicRoom(playerID string) (string, string, error)
+	JoinPublicRoom(playerID string) (string, error)
 	RetrieveGame(roomID string) (GameRoom, error)
 	ExecutePlayerMove(roomID string, playerMove string) error
 	DeleteGameRoom(roomID string) error
@@ -38,12 +38,16 @@ func (m *manager) StartGame(message string) (GameRoom, error) {
 	roomAvailable, _ := m.database.PublicRoomAvailable()
 	if !roomAvailable {
 		roomID := uuid.NewString()
-
 		_ = m.database.CreatePublicRoom(roomID, playerID)
 		return GameRoom{roomID, []Player{{playerID, "Waiting for Player"}}}, nil
 	}
-	roomID, opponentID, _ := m.database.JoinPublicRoom(playerID)
-	return GameRoom{roomID, []Player{{opponentID, "Start Game"}, {playerID, "Start Game"}}}, nil
+	roomID, _ := m.database.JoinPublicRoom(playerID)
+	gameRoom, _ := m.database.RetrieveGame(roomID)
+
+	gameRoom.Players[0].Message = "Start Game"
+	gameRoom.Players[1].Message = "Start Game"
+
+	return gameRoom, nil
 }
 
 // TODO: Consider having another object to store players and gamestate and exclude the message.

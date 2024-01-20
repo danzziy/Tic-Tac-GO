@@ -67,30 +67,26 @@ func TestCreatePublicRoom(t *testing.T) {
 func TestJoinPublicRoom(t *testing.T) {
 	t.Parallel()
 	roomID := uuid.NewString()
-	player1ID := uuid.NewString()
 	player2ID := uuid.NewString()
 
-	db := miniredis.RunT(t)
+	db, mock := redismock.NewClientMock()
 	defer db.Close()
 
 	// Arrange
-	db.Lpush("Public:Rooms:Available", roomID)
-	// Player2 are always the ones joining, player1 creates the room.
-	db.HSet(fmt.Sprintf("Room:%s", roomID), "player1ID", player1ID)
+	mock.ExpectRPop("Public:Rooms:Available").SetVal(roomID)
+	mock.ExpectHSet(
+		fmt.Sprintf("Room:%s", roomID), "player2ID", player2ID, "gameState", "000000000",
+	).RedisNil()
 
 	// Act
-	database := NewDatabase(db.Addr(), "")
+	database := NewDatabaseTestClient(db)
 	// Player2 are always the ones joining, player1 creates the room.
-	actualRoomID, actualPlayer1ID, err := database.JoinPublicRoom(player2ID)
+	actualRoomID, err := database.JoinPublicRoom(player2ID)
 
 	// Assert
 	assert.NoError(t, err)
-	assert.False(t, db.Exists("Public:Rooms:Available"))
+	assert.NoError(t, mock.ExpectationsWereMet())
 	assert.Equal(t, roomID, actualRoomID)
-	assert.Equal(t, player1ID, actualPlayer1ID)
-	assert.Equal(t, db.HGet(fmt.Sprintf("Room:%s", roomID), "player1ID"), player1ID)
-	assert.Equal(t, db.HGet(fmt.Sprintf("Room:%s", roomID), "player2ID"), player2ID)
-	assert.Equal(t, db.HGet(fmt.Sprintf("Room:%s", roomID), "gameState"), "000000000")
 }
 
 func TestRetrieveGame(t *testing.T) {
