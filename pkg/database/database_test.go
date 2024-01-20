@@ -5,7 +5,6 @@ import (
 	"testing"
 	"tic-tac-go/pkg/manager"
 
-	"github.com/alicebob/miniredis/v2"
 	"github.com/go-redis/redismock/v9"
 	"github.com/google/uuid"
 
@@ -37,8 +36,8 @@ func TestPublicRoomsAvailable(t *testing.T) {
 
 			// Assert
 			assert.NoError(t, err)
-			assert.NoError(t, mock.ExpectationsWereMet())
 			assert.Equal(t, tc.expctedResult, roomAvailable)
+			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
 }
@@ -85,8 +84,8 @@ func TestJoinPublicRoom(t *testing.T) {
 
 	// Assert
 	assert.NoError(t, err)
-	assert.NoError(t, mock.ExpectationsWereMet())
 	assert.Equal(t, roomID, actualRoomID)
+	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
 func TestRetrieveGame(t *testing.T) {
@@ -95,18 +94,21 @@ func TestRetrieveGame(t *testing.T) {
 	player1ID := uuid.NewString()
 	player2ID := uuid.NewString()
 
-	db := miniredis.RunT(t)
+	db, mock := redismock.NewClientMock()
 	defer db.Close()
 
 	// Arrange
-	db.HSet(fmt.Sprintf("Room:%s", roomID), "player1ID", player1ID, "player2ID", player2ID, "gameState", "000000000")
+	mock.ExpectHGetAll(fmt.Sprintf("Room:%s", roomID)).SetVal(map[string]string{
+		"player1ID": player1ID, "player2ID": player2ID, "gameState": "000000000",
+	})
 
 	// Act
-	database := NewDatabase(db.Addr(), "")
+	database := NewDatabaseTestClient(db)
 	actualGameRoom, err := database.RetrieveGame(roomID)
 
 	// Assert
 	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
 	assert.Equal(t, manager.GameRoom{RoomID: roomID,
 		Players: []manager.Player{{ID: player1ID, Message: "000000000"}, {ID: player2ID, Message: "000000000"}},
 	}, actualGameRoom)
@@ -117,43 +119,36 @@ func TestExecutePlayerMove(t *testing.T) {
 	roomID := uuid.NewString()
 	playerMove := "000010000"
 
-	player1ID := uuid.NewString()
-	player2ID := uuid.NewString()
-
-	db := miniredis.RunT(t)
+	db, mock := redismock.NewClientMock()
 	defer db.Close()
 
 	// Arrange
-	db.HSet(fmt.Sprintf("Room:%s", roomID), "player1ID", player1ID, "player2ID", player2ID, "gameState", "000000000")
+	mock.ExpectHSet(fmt.Sprintf("Room:%s", roomID), "gameState", playerMove).RedisNil()
 
 	// Act
-	database := NewDatabase(db.Addr(), "")
+	database := NewDatabaseTestClient(db)
 	err := database.ExecutePlayerMove(roomID, playerMove)
 
 	// Assert
 	assert.NoError(t, err)
-	assert.Equal(t, db.HGet(fmt.Sprintf("Room:%s", roomID), "player1ID"), player1ID)
-	assert.Equal(t, db.HGet(fmt.Sprintf("Room:%s", roomID), "player2ID"), player2ID)
-	assert.Equal(t, db.HGet(fmt.Sprintf("Room:%s", roomID), "gameState"), "000010000")
+	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
 func TestDeleteGameRoom(t *testing.T) {
 	t.Parallel()
 	roomID := uuid.NewString()
-	player1ID := uuid.NewString()
-	player2ID := uuid.NewString()
 
-	db := miniredis.RunT(t)
+	db, mock := redismock.NewClientMock()
 	defer db.Close()
 
 	// Arrange
-	db.HSet(fmt.Sprintf("Room:%s", roomID), "player1ID", player1ID, "player2ID", player2ID, "gameState", "000000000")
+	mock.ExpectDel(fmt.Sprintf("Room:%s", roomID)).RedisNil()
 
 	// Act
-	database := NewDatabase(db.Addr(), "")
+	database := NewDatabaseTestClient(db)
 	err := database.DeleteGameRoom(roomID)
 
 	// Assert
 	assert.NoError(t, err)
-	assert.False(t, db.Exists(fmt.Sprintf("Room:%s", roomID)))
+	assert.NoError(t, mock.ExpectationsWereMet())
 }
