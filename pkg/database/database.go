@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"log"
 	"tic-tac-go/pkg/manager"
 
 	"github.com/redis/go-redis/v9"
@@ -24,18 +25,22 @@ func NewDatabase(address string, password string) manager.Database {
 	}
 }
 
+func NewDatabaseTestClient(redis *redis.Client) manager.Database {
+	return &database{redis}
+}
+
 func (d *database) PublicRoomAvailable() (bool, error) {
 	listLen, _ := d.redis.LLen(ctx, "Public:Rooms:Available").Result()
+	log.Printf("WHAT IS LISTLEN: %d", listLen)
 	if listLen > 0 {
 		return true, nil
 	}
-
 	return false, nil
 }
 
 func (d *database) CreatePublicRoom(roomID string, playerID string) error {
-	_ = d.redis.LPush(ctx, "Public:Rooms:Available", roomID)
 	_ = d.redis.HSet(ctx, fmt.Sprintf("Room:%s", roomID), "player1ID", playerID)
+	_ = d.redis.LPush(ctx, "Public:Rooms:Available", roomID)
 	return nil
 }
 

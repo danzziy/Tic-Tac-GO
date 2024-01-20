@@ -6,6 +6,7 @@ import (
 	"tic-tac-go/pkg/manager"
 
 	"github.com/alicebob/miniredis/v2"
+	"github.com/go-redis/redismock/v9"
 	"github.com/google/uuid"
 
 	"github.com/stretchr/testify/assert"
@@ -13,58 +14,58 @@ import (
 
 func TestPublicRoomsAvailable(t *testing.T) {
 	t.Parallel()
+	for _, tc := range []struct {
+		numberOfRooms int64
+		expctedResult bool
+	}{
+		{0, false}, // No Rooms Available
+		{1, true},  // 1 Room Available
+		{2, true},  // 2 Rooms Available
+	} {
+		tc := tc
+		t.Run(fmt.Sprintf("Number of Rooms: %d", tc.numberOfRooms), func(t *testing.T) {
+			t.Parallel()
+			db, mock := redismock.NewClientMock()
+			defer db.Close()
 
-	db := miniredis.RunT(t)
+			// Arrange
+			mock.ExpectLLen("Public:Rooms:Available").SetVal(tc.numberOfRooms)
 
-	// Arrange
-	db.Lpush("Public:Rooms:Available", uuid.NewString())
-	defer db.Close()
+			// Act
+			database := NewDatabaseTestClient(db)
+			roomAvailable, err := database.PublicRoomAvailable()
 
-	// Act
-	database := NewDatabase(db.Addr(), "")
-	roomAvailable, err := database.PublicRoomAvailable()
-
-	// Assert
-	assert.NoError(t, err)
-	assert.True(t, roomAvailable)
-}
-
-func TestPublicRoomsAreNotAvailable(t *testing.T) {
-	t.Parallel()
-
-	db := miniredis.RunT(t)
-	defer db.Close()
-
-	// Act
-	database := NewDatabase(db.Addr(), "")
-	roomAvailable, err := database.PublicRoomAvailable()
-
-	// Assert
-	assert.NoError(t, err)
-	assert.False(t, roomAvailable)
+			// Assert
+			assert.NoError(t, err)
+			assert.NoError(t, mock.ExpectationsWereMet())
+			assert.Equal(t, tc.expctedResult, roomAvailable)
+		})
+	}
 }
 
 func TestCreatePublicRoom(t *testing.T) {
 	t.Parallel()
-
 	roomID := uuid.NewString()
 	playerID := uuid.NewString()
-	db := miniredis.RunT(t)
+
+	db, mock := redismock.NewClientMock()
 	defer db.Close()
 
+	// Arrange
+	mock.ExpectHSet(fmt.Sprintf("Room:%s", roomID), "player1ID", playerID).RedisNil()
+	mock.ExpectLPush("Public:Rooms:Available", roomID).RedisNil()
+
 	// Act
-	database := NewDatabase(db.Addr(), "")
+	database := NewDatabaseTestClient(db)
 	err := database.CreatePublicRoom(roomID, playerID)
 
 	// Assert
 	assert.NoError(t, err)
-	db.CheckList(t, "Public:Rooms:Available", roomID)
-	assert.Equal(t, db.HGet(fmt.Sprintf("Room:%s", roomID), "player1ID"), playerID)
+	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
 func TestJoinPublicRoom(t *testing.T) {
 	t.Parallel()
-
 	roomID := uuid.NewString()
 	player1ID := uuid.NewString()
 	player2ID := uuid.NewString()
@@ -94,7 +95,6 @@ func TestJoinPublicRoom(t *testing.T) {
 
 func TestRetrieveGame(t *testing.T) {
 	t.Parallel()
-
 	roomID := uuid.NewString()
 	player1ID := uuid.NewString()
 	player2ID := uuid.NewString()
@@ -118,7 +118,6 @@ func TestRetrieveGame(t *testing.T) {
 
 func TestExecutePlayerMove(t *testing.T) {
 	t.Parallel()
-
 	roomID := uuid.NewString()
 	playerMove := "000010000"
 
@@ -144,7 +143,6 @@ func TestExecutePlayerMove(t *testing.T) {
 
 func TestDeleteGameRoom(t *testing.T) {
 	t.Parallel()
-
 	roomID := uuid.NewString()
 	player1ID := uuid.NewString()
 	player2ID := uuid.NewString()
