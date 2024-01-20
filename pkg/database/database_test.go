@@ -42,6 +42,25 @@ func TestPublicRoomsAvailable(t *testing.T) {
 	}
 }
 
+func TestFailedToVerifyPublicRoomAvailability(t *testing.T) {
+	t.Parallel()
+
+	db, mock := redismock.NewClientMock()
+	defer db.Close()
+
+	// Arrange
+	mock.ExpectLLen("Public:Rooms:Available").SetErr(assert.AnError)
+
+	// Act
+	database := NewDatabaseTestClient(db)
+	roomAvailable, err := database.PublicRoomAvailable()
+
+	// Assert
+	assert.Error(t, err)
+	assert.False(t, roomAvailable)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestCreatePublicRoom(t *testing.T) {
 	t.Parallel()
 	roomID := uuid.NewString()
@@ -51,8 +70,8 @@ func TestCreatePublicRoom(t *testing.T) {
 	defer db.Close()
 
 	// Arrange
-	mock.ExpectHSet(fmt.Sprintf("Room:%s", roomID), "player1ID", playerID).RedisNil()
-	mock.ExpectLPush("Public:Rooms:Available", roomID).RedisNil()
+	mock.ExpectHSet(fmt.Sprintf("Room:%s", roomID), "player1ID", playerID).SetVal(0)
+	mock.ExpectLPush("Public:Rooms:Available", roomID).SetVal(0)
 
 	// Act
 	database := NewDatabaseTestClient(db)
@@ -60,6 +79,47 @@ func TestCreatePublicRoom(t *testing.T) {
 
 	// Assert
 	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestCreatePublicRoomFailsToCreateRoom(t *testing.T) {
+	t.Parallel()
+	roomID := uuid.NewString()
+	playerID := uuid.NewString()
+
+	db, mock := redismock.NewClientMock()
+	defer db.Close()
+
+	// Arrange
+	mock.ExpectHSet(fmt.Sprintf("Room:%s", roomID), "player1ID", playerID).SetErr(assert.AnError)
+
+	// Act
+	database := NewDatabaseTestClient(db)
+	err := database.CreatePublicRoom(roomID, playerID)
+
+	// Assert
+	assert.Error(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestCreatePublicRoomFailsToMakeRoomAvailable(t *testing.T) {
+	t.Parallel()
+	roomID := uuid.NewString()
+	playerID := uuid.NewString()
+
+	db, mock := redismock.NewClientMock()
+	defer db.Close()
+
+	// Arrange
+	mock.ExpectHSet(fmt.Sprintf("Room:%s", roomID), "player1ID", playerID).SetVal(0)
+	mock.ExpectLPush("Public:Rooms:Available", roomID).SetErr(assert.AnError)
+
+	// Act
+	database := NewDatabaseTestClient(db)
+	err := database.CreatePublicRoom(roomID, playerID)
+
+	// Assert
+	assert.Error(t, err)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -75,7 +135,7 @@ func TestJoinPublicRoom(t *testing.T) {
 	mock.ExpectRPop("Public:Rooms:Available").SetVal(roomID)
 	mock.ExpectHSet(
 		fmt.Sprintf("Room:%s", roomID), "player2ID", player2ID, "gameState", "000000000",
-	).RedisNil()
+	).SetVal(0)
 
 	// Act
 	database := NewDatabaseTestClient(db)
@@ -85,6 +145,50 @@ func TestJoinPublicRoom(t *testing.T) {
 	// Assert
 	assert.NoError(t, err)
 	assert.Equal(t, roomID, actualRoomID)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestJoinPublicRoomWhenRetrievingAvailableRoomsFail(t *testing.T) {
+	t.Parallel()
+	player2ID := uuid.NewString()
+
+	db, mock := redismock.NewClientMock()
+	defer db.Close()
+
+	// Arrange
+	mock.ExpectRPop("Public:Rooms:Available").SetErr(assert.AnError)
+
+	// Act
+	database := NewDatabaseTestClient(db)
+	actualRoomID, err := database.JoinPublicRoom(player2ID)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Empty(t, actualRoomID)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestJoinPublicRoomWhenJoiningRoomFails(t *testing.T) {
+	t.Parallel()
+	roomID := uuid.NewString()
+	player2ID := uuid.NewString()
+
+	db, mock := redismock.NewClientMock()
+	defer db.Close()
+
+	// Arrange
+	mock.ExpectRPop("Public:Rooms:Available").SetVal(roomID)
+	mock.ExpectHSet(
+		fmt.Sprintf("Room:%s", roomID), "player2ID", player2ID, "gameState", "000000000",
+	).SetErr(assert.AnError)
+
+	// Act
+	database := NewDatabaseTestClient(db)
+	actualRoomID, err := database.JoinPublicRoom(player2ID)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Empty(t, actualRoomID)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -114,6 +218,26 @@ func TestRetrieveGame(t *testing.T) {
 	}, actualGameRoom)
 }
 
+func TestRetrieveGameFails(t *testing.T) {
+	t.Parallel()
+	roomID := uuid.NewString()
+
+	db, mock := redismock.NewClientMock()
+	defer db.Close()
+
+	// Arrange
+	mock.ExpectHGetAll(fmt.Sprintf("Room:%s", roomID)).SetErr(assert.AnError)
+
+	// Act
+	database := NewDatabaseTestClient(db)
+	actualGameRoom, err := database.RetrieveGame(roomID)
+
+	// Assert
+	assert.Error(t, err)
+	assert.Empty(t, actualGameRoom)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestExecutePlayerMove(t *testing.T) {
 	t.Parallel()
 	roomID := uuid.NewString()
@@ -123,7 +247,7 @@ func TestExecutePlayerMove(t *testing.T) {
 	defer db.Close()
 
 	// Arrange
-	mock.ExpectHSet(fmt.Sprintf("Room:%s", roomID), "gameState", playerMove).RedisNil()
+	mock.ExpectHSet(fmt.Sprintf("Room:%s", roomID), "gameState", playerMove).SetVal(0)
 
 	// Act
 	database := NewDatabaseTestClient(db)
@@ -131,6 +255,26 @@ func TestExecutePlayerMove(t *testing.T) {
 
 	// Assert
 	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestExecutePlayerMoveFails(t *testing.T) {
+	t.Parallel()
+	roomID := uuid.NewString()
+	playerMove := "000010000"
+
+	db, mock := redismock.NewClientMock()
+	defer db.Close()
+
+	// Arrange
+	mock.ExpectHSet(fmt.Sprintf("Room:%s", roomID), "gameState", playerMove).SetErr(assert.AnError)
+
+	// Act
+	database := NewDatabaseTestClient(db)
+	err := database.ExecutePlayerMove(roomID, playerMove)
+
+	// Assert
+	assert.Error(t, err)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -142,7 +286,8 @@ func TestDeleteGameRoom(t *testing.T) {
 	defer db.Close()
 
 	// Arrange
-	mock.ExpectDel(fmt.Sprintf("Room:%s", roomID)).RedisNil()
+	mock.ExpectLRem("Public:Rooms:Available", 0, roomID).SetVal(0)
+	mock.ExpectDel(fmt.Sprintf("Room:%s", roomID)).SetVal(0)
 
 	// Act
 	database := NewDatabaseTestClient(db)
@@ -150,5 +295,44 @@ func TestDeleteGameRoom(t *testing.T) {
 
 	// Assert
 	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestDeleteGameRoomFailsToRemovePublicRoomFromAvailableList(t *testing.T) {
+	t.Parallel()
+	roomID := uuid.NewString()
+
+	db, mock := redismock.NewClientMock()
+	defer db.Close()
+
+	// Arrange
+	mock.ExpectLRem("Public:Rooms:Available", 0, roomID).SetErr(assert.AnError)
+
+	// Act
+	database := NewDatabaseTestClient(db)
+	err := database.DeleteGameRoom(roomID)
+
+	// Assert
+	assert.Error(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestDeleteGameRoomFailsToRemoveRoom(t *testing.T) {
+	t.Parallel()
+	roomID := uuid.NewString()
+
+	db, mock := redismock.NewClientMock()
+	defer db.Close()
+
+	// Arrange
+	mock.ExpectLRem("Public:Rooms:Available", 0, roomID).SetVal(0)
+	mock.ExpectDel(fmt.Sprintf("Room:%s", roomID)).SetErr(assert.AnError)
+
+	// Act
+	database := NewDatabaseTestClient(db)
+	err := database.DeleteGameRoom(roomID)
+
+	// Assert
+	assert.Error(t, err)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
