@@ -33,16 +33,36 @@ func NewManager(database Database, analyzer Analyzer) Manager {
 	return &manager{database, analyzer}
 }
 
+// TODO: Consider having another object to store players and gamestate and exclude the message.
+// Perhaps call it a GameRoomState and rename the other to GameRoomMessenger.
+// TODO: If an opponent sends a websocket message prior to the current players turn, they could hijack
+// their opponents move. Perhaps have each user send in their ids to verify themselves.
+// TODO: Implement retry logic.
+
 func (m *manager) StartGame(message string) (GameRoom, error) {
 	playerID := uuid.NewString()
-	roomAvailable, _ := m.database.PublicRoomAvailable()
+
+	roomAvailable, err := m.database.PublicRoomAvailable()
+	if err != nil {
+		return GameRoom{}, err
+	}
+
 	if !roomAvailable {
 		roomID := uuid.NewString()
-		_ = m.database.CreatePublicRoom(roomID, playerID)
+		if err = m.database.CreatePublicRoom(roomID, playerID); err != nil {
+			return GameRoom{}, err
+		}
 		return GameRoom{roomID, []Player{{playerID, "Waiting for Player"}}}, nil
 	}
-	roomID, _ := m.database.JoinPublicRoom(playerID)
-	gameRoom, _ := m.database.RetrieveGame(roomID)
+
+	roomID, err := m.database.JoinPublicRoom(playerID)
+	if err != nil {
+		return GameRoom{}, err
+	}
+	gameRoom, err := m.database.RetrieveGame(roomID)
+	if err != nil {
+		return GameRoom{}, err
+	}
 
 	gameRoom.Players[0].Message = "Start Game"
 	gameRoom.Players[1].Message = "Start Game"
@@ -50,10 +70,6 @@ func (m *manager) StartGame(message string) (GameRoom, error) {
 	return gameRoom, nil
 }
 
-// TODO: Consider having another object to store players and gamestate and exclude the message.
-// Perhaps call it a GameRoomState and rename the other to GameRoomMessenger.
-// TODO: If an opponent sends a websocket message prior to the current players turn, they could hijack
-// their opponents move. Perhaps have each user send in their ids to verify themselves.
 func (m *manager) ExecutePlayerMove(roomID string, playerMove string) (GameRoom, error) {
 	gameRoom, _ := m.database.RetrieveGame(roomID)
 	prevGameState := gameRoom.Players[0].Message

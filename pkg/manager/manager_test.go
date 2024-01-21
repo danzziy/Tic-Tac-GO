@@ -58,6 +58,79 @@ func TestStartGameWhenAPublicRoomIsAvailable(t *testing.T) {
 	assert.Equal(t, expectedGameRoom, actualGameRoom)
 }
 
+func TestStartGameFailsWhenRetrievingPublicRoomIsAvailable(t *testing.T) {
+	t.Parallel()
+	database := new(mockDatabase)
+
+	// Arrange
+	database.On("PublicRoomAvailable").Return(false, assert.AnError).Once()
+
+	// Act
+	manager := NewManager(database, nil)
+	actualGameRoom, err := manager.StartGame("Join Room")
+
+	// Assert
+	assert.Error(t, err)
+	assert.Empty(t, actualGameRoom)
+	database.AssertExpectations(t)
+}
+
+func TestStartGameWhenCreatingPublicRoomFail(t *testing.T) {
+	t.Parallel()
+	database := new(mockDatabase)
+
+	// Arrange
+	database.On("PublicRoomAvailable").Return(false, nil).Once()
+	database.On("CreatePublicRoom", mock.MatchedBy(matchUUID), mock.MatchedBy(matchUUID)).Return(assert.AnError)
+
+	// Act
+	manager := NewManager(database, nil)
+	actualGameRoom, err := manager.StartGame("Join Room")
+
+	// Assert
+	assert.Error(t, err)
+	assert.Empty(t, actualGameRoom)
+	database.AssertExpectations(t)
+}
+
+func TestStartGameWhenJoiningPublicRoomFail(t *testing.T) {
+	t.Parallel()
+	database := new(mockDatabase)
+
+	// Arrange
+	database.On("PublicRoomAvailable").Return(true, nil).Once()
+	database.On("JoinPublicRoom", mock.MatchedBy(matchUUID)).Return("", assert.AnError)
+
+	// Act
+	manager := NewManager(database, nil)
+	actualGameRoom, err := manager.StartGame("Join Room")
+
+	// Assert
+	assert.Error(t, err)
+	assert.Empty(t, actualGameRoom)
+	database.AssertExpectations(t)
+}
+
+func TestStartGameWhenRetrievingRoomFails(t *testing.T) {
+	t.Parallel()
+	database := new(mockDatabase)
+	roomID := uuid.NewString()
+
+	// Arrange
+	database.On("PublicRoomAvailable").Return(true, nil).Once()
+	database.On("JoinPublicRoom", matcher(matchUUID)).Return(roomID, nil).Once()
+	database.On("RetrieveGame", matcher(matchUUID)).Return(GameRoom{}, assert.AnError).Once()
+
+	// Act
+	manager := NewManager(database, nil)
+	actualGameRoom, err := manager.StartGame("Join Room")
+
+	// Assert
+	assert.Error(t, err)
+	assert.Empty(t, actualGameRoom)
+	database.AssertExpectations(t)
+}
+
 func TestExecutesPlayerMove(t *testing.T) {
 	t.Parallel()
 	for _, tc := range []struct {
