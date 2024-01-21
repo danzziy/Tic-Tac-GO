@@ -6,7 +6,7 @@ import (
 
 type Analyzer interface {
 	ValidMove(prevGameState string, playerMove string) bool
-	DetermineWinner(playerMove string, players []Player) ([]Player, error)
+	DetermineWinner(playerMove string, players []Player) []Player
 }
 
 type Database interface {
@@ -84,10 +84,7 @@ func (m *manager) ExecutePlayerMove(roomID string, playerMove string) (GameRoom,
 		if err := m.database.ExecutePlayerMove(roomID, playerMove); err != nil {
 			return GameRoom{}, err
 		}
-		players, err := m.analyzer.DetermineWinner(playerMove, gameRoom.Players)
-		if err != nil {
-			return GameRoom{}, nil
-		}
+		players := m.analyzer.DetermineWinner(playerMove, gameRoom.Players)
 		return GameRoom{gameRoom.RoomID, players}, nil
 	}
 	return GameRoom{}, nil

@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TODO: None of these need to return an error.
 func TestValidMoves(t *testing.T) {
 	t.Parallel()
 	for _, tc := range []struct {
@@ -105,10 +104,9 @@ func TestDeterminesWinner(t *testing.T) {
 
 			// Act
 			analyzer := NewAnalyzer()
-			actualPlayers, err := analyzer.DetermineWinner(tc.playerMove, players)
+			actualPlayers := analyzer.DetermineWinner(tc.playerMove, players)
 
 			// Assert
-			assert.NoError(t, err)
 			assert.Equal(t, expectedPlayers, actualPlayers)
 		})
 	}

@@ -44,19 +44,19 @@ func (a *analyzer) ValidMove(prevGameState string, playerMove string) bool {
 	return true
 }
 
-func (a *analyzer) DetermineWinner(playerMove string, players []manager.Player) ([]manager.Player, error) {
+func (a *analyzer) DetermineWinner(playerMove string, players []manager.Player) []manager.Player {
 	if rowsContainAWinner(playerMove, &players) || columnsContainAWinner(playerMove, &players) ||
 		diagonalsContainAWinner(playerMove, &players) {
-		return players, nil
+		return players
 	} else if !strings.Contains(playerMove, "0") {
 		players[0].Message = fmt.Sprintf("%s:Tie", playerMove)
 		players[1].Message = fmt.Sprintf("%s:Tie", playerMove)
-		return players, nil
+		return players
 	}
 
 	players[0].Message = fmt.Sprintf("%s:Ongoing", playerMove)
 	players[1].Message = fmt.Sprintf("%s:Ongoing", playerMove)
-	return players, nil
+	return players
 }
 
 func rowsContainAWinner(playerMove string, players *[]manager.Player) bool {

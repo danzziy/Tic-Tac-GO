@@ -172,7 +172,7 @@ func TestExecutesPlayerMove(t *testing.T) {
 			database.On("RetrieveGame", matcher(matchUUID)).Return(gameRoom, nil).Once()
 			analyzer.On("ValidMove", tc.prevGameState, matcher(matchGameBoard)).Return(true).Once()
 			database.On("ExecutePlayerMove", matcher(matchUUID), matcher(matchGameBoard)).Return(nil).Once()
-			analyzer.On("DetermineWinner", matcher(matchGameBoard), gameRoom.Players).Return(tc.expectedGameRoom.Players, nil).Once()
+			analyzer.On("DetermineWinner", matcher(matchGameBoard), gameRoom.Players).Return(tc.expectedGameRoom.Players).Once()
 
 			// Act
 			manager := NewManager(database, analyzer)
@@ -258,9 +258,9 @@ func (m *mockAnalyzer) ValidMove(prevGameState string, playerMove string) bool {
 	return args.Bool(0)
 }
 
-func (m *mockAnalyzer) DetermineWinner(playerMove string, players []Player) ([]Player, error) {
+func (m *mockAnalyzer) DetermineWinner(playerMove string, players []Player) []Player {
 	args := m.Called(playerMove, players)
-	return args.Get(0).([]Player), args.Error(1)
+	return args.Get(0).([]Player)
 }
 
 func matcher(fn interface{}) interface{} {
