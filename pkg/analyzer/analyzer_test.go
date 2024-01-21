@@ -26,10 +26,9 @@ func TestValidMoves(t *testing.T) {
 
 			// Act
 			analyzer := NewAnalyzer()
-			validMove, err := analyzer.ValidMove(tc.prevGameState, tc.playerMove)
+			validMove := analyzer.ValidMove(tc.prevGameState, tc.playerMove)
 
 			// Assert
-			assert.NoError(t, err)
 			assert.True(t, validMove)
 		})
 	}
@@ -58,10 +57,9 @@ func TestInValidMoves(t *testing.T) {
 
 			// Act
 			analyzer := NewAnalyzer()
-			validMove, err := analyzer.ValidMove(tc.prevGameState, tc.playerMove)
+			validMove := analyzer.ValidMove(tc.prevGameState, tc.playerMove)
 
 			// Assert
-			assert.NoError(t, err)
 			assert.False(t, validMove)
 		})
 	}

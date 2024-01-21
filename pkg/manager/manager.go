@@ -5,7 +5,7 @@ import (
 )
 
 type Analyzer interface {
-	ValidMove(prevGameState string, playerMove string) (bool, error)
+	ValidMove(prevGameState string, playerMove string) bool
 	DetermineWinner(playerMove string, players []Player) ([]Player, error)
 }
 
@@ -38,6 +38,7 @@ func NewManager(database Database, analyzer Analyzer) Manager {
 // TODO: If an opponent sends a websocket message prior to the current players turn, they could hijack
 // their opponents move. Perhaps have each user send in their ids to verify themselves.
 // TODO: Implement retry logic.
+// TODO: Implement error handling tests.
 
 func (m *manager) StartGame(message string) (GameRoom, error) {
 	playerID := uuid.NewString()
@@ -71,10 +72,13 @@ func (m *manager) StartGame(message string) (GameRoom, error) {
 }
 
 func (m *manager) ExecutePlayerMove(roomID string, playerMove string) (GameRoom, error) {
-	gameRoom, _ := m.database.RetrieveGame(roomID)
+	gameRoom, err := m.database.RetrieveGame(roomID)
+	if err != nil {
+		return GameRoom{}, err
+	}
 	prevGameState := gameRoom.Players[0].Message
 
-	validMove, _ := m.analyzer.ValidMove(prevGameState, playerMove)
+	validMove := m.analyzer.ValidMove(prevGameState, playerMove)
 
 	if validMove {
 		_ = m.database.ExecutePlayerMove(roomID, playerMove)

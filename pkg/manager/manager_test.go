@@ -170,7 +170,7 @@ func TestExecutesPlayerMove(t *testing.T) {
 
 			// Arrange
 			database.On("RetrieveGame", matcher(matchUUID)).Return(gameRoom, nil).Once()
-			analyzer.On("ValidMove", tc.prevGameState, matcher(matchGameBoard)).Return(true, nil).Once()
+			analyzer.On("ValidMove", tc.prevGameState, matcher(matchGameBoard)).Return(true).Once()
 			database.On("ExecutePlayerMove", matcher(matchUUID), matcher(matchGameBoard)).Return(nil).Once()
 			analyzer.On("DetermineWinner", matcher(matchGameBoard), gameRoom.Players).Return(tc.expectedGameRoom.Players, nil).Once()
 
@@ -253,9 +253,9 @@ type mockAnalyzer struct {
 	mock.Mock
 }
 
-func (m *mockAnalyzer) ValidMove(prevGameState string, playerMove string) (bool, error) {
+func (m *mockAnalyzer) ValidMove(prevGameState string, playerMove string) bool {
 	args := m.Called(prevGameState, playerMove)
-	return args.Bool(0), args.Error(1)
+	return args.Bool(0)
 }
 
 func (m *mockAnalyzer) DetermineWinner(playerMove string, players []Player) ([]Player, error) {

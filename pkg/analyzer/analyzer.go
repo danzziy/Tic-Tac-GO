@@ -13,15 +13,13 @@ func NewAnalyzer() manager.Analyzer {
 	return &analyzer{}
 }
 
-func (a *analyzer) ValidMove(prevGameState string, playerMove string) (bool, error) {
-	// TODO: If the length is not 9 there should be an error.
+func (a *analyzer) ValidMove(prevGameState string, playerMove string) bool {
 	if len(prevGameState) != 9 || len(playerMove) != 9 || prevGameState == playerMove {
-		return false, nil
+		return false
 	}
 
 	ones := 0
 	twos := 0
-
 	moves := 0
 	for i := 0; i < len(prevGameState); i++ {
 		if playerMove[i] == '1' {
@@ -34,16 +32,16 @@ func (a *analyzer) ValidMove(prevGameState string, playerMove string) (bool, err
 			moves++
 			// Valid move: From '0' (empty) to '1' or '2' (player marker)
 			if prevGameState[i] == '1' && playerMove[i] == '2' || prevGameState[i] == '2' && playerMove[i] == '1' || moves > 1 {
-				return false, nil // Invalid move
+				return false // Invalid move
 			}
 		}
 	}
 
 	if twos > ones || ones > twos+1 {
-		return false, nil // Invalid move
+		return false // Invalid move
 	}
 
-	return true, nil
+	return true
 }
 
 func (a *analyzer) DetermineWinner(playerMove string, players []manager.Player) ([]manager.Player, error) {
