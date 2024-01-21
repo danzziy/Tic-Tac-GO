@@ -81,16 +81,26 @@ func (m *manager) ExecutePlayerMove(roomID string, playerMove string) (GameRoom,
 	validMove := m.analyzer.ValidMove(prevGameState, playerMove)
 
 	if validMove {
-		_ = m.database.ExecutePlayerMove(roomID, playerMove)
-		players, _ := m.analyzer.DetermineWinner(playerMove, gameRoom.Players)
+		if err := m.database.ExecutePlayerMove(roomID, playerMove); err != nil {
+			return GameRoom{}, err
+		}
+		players, err := m.analyzer.DetermineWinner(playerMove, gameRoom.Players)
+		if err != nil {
+			return GameRoom{}, nil
+		}
 		return GameRoom{gameRoom.RoomID, players}, nil
 	}
 	return GameRoom{}, nil
 }
 
 func (m *manager) EndGame(roomID string) (GameRoom, error) {
-	gameRoom, _ := m.database.RetrieveGame(roomID)
-	_ = m.database.DeleteGameRoom(roomID)
+	gameRoom, err := m.database.RetrieveGame(roomID)
+	if err != nil {
+		return GameRoom{}, err
+	}
+	if err := m.database.DeleteGameRoom(roomID); err != nil {
+		return GameRoom{}, err
+	}
 
 	gameRoom.Players[0].Message = "Terminate Connection"
 	gameRoom.Players[1].Message = "Terminate Connection"
