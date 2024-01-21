@@ -3,6 +3,7 @@ package http_server
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"regexp"
 	"tic-tac-go/pkg/manager"
@@ -32,21 +33,43 @@ func NewHTTPServer(port int, manager manager.Manager) *HTTPServer {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/public", func(w http.ResponseWriter, r *http.Request) {
-		conn, _ := upgrader.Upgrade(w, r, nil)
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			log.Printf("Error Upgrading Connection: %v", err)
+			return
+		}
 		defer conn.Close()
 
-		_, bytes, _ := conn.ReadMessage()
-		game, _ := manager.StartGame(string(bytes))
+		_, bytes, err := conn.ReadMessage()
+		if err != nil {
+			log.Printf("Failed to Read Websocket Message: %v", err)
+			return
+		}
+
+		game, err := manager.StartGame(string(bytes))
+		if err != nil {
+			log.Printf("Error Starting Game: %v", err)
+			return
+		}
 		for _, player := range game.Players {
 			if _, ok := clients[player.ID]; !ok {
 				clients[player.ID] = conn
 			}
-			clients[player.ID].WriteMessage(websocket.TextMessage, []byte(player.Message))
+			err = clients[player.ID].WriteMessage(websocket.TextMessage, []byte(player.Message))
+			if err != nil {
+				log.Printf("Error Sending Websocket Message: %v", err)
+				return
+			}
 		}
 
 		regex := regexp.MustCompile("^[012]{9}$")
 		for {
-			_, bytes, _ = conn.ReadMessage()
+			_, bytes, err = conn.ReadMessage()
+			if err != nil {
+				log.Printf("Failed to Read Websocket Message: %v", err)
+				manager.EndGame(game.RoomID)
+				return
+			}
 			playerMessage := string(bytes)
 			// On successful move send game message to both players using
 			// clients[playerID] to do so. On unsuccessful moves, send
@@ -54,12 +77,41 @@ func NewHTTPServer(port int, manager manager.Manager) *HTTPServer {
 
 			switch {
 			case regex.MatchString(playerMessage):
-				game, _ := manager.ExecutePlayerMove(game.RoomID, playerMessage)
+				game, err := manager.ExecutePlayerMove(game.RoomID, playerMessage)
+				if err != nil {
+					log.Printf("Failed to Execute Player Move: %v", err)
+					manager.EndGame(game.RoomID)
+					sendErrorMessageToClients(game)
+					return
+				}
 				sendMessageToClients(game)
 			case playerMessage == "End Game":
 				// TODO: Fix logic, after users end the game, they should be able to start a new one.
-				game, _ := manager.EndGame(game.RoomID)
+				game, err := manager.EndGame(game.RoomID)
+				if err != nil {
+					log.Printf("Failed to End Game: %v", err)
+					manager.EndGame(game.RoomID)
+					sendErrorMessageToClients(game)
+					return
+				}
 				sendMessageToClients(game)
+			case playerMessage == "Join Room":
+				game, err := manager.StartGame(playerMessage)
+				if err != nil {
+					log.Printf("Error Starting Game: %v", err)
+					sendErrorMessageToClients(game)
+					return
+				}
+				for _, player := range game.Players {
+					if _, ok := clients[player.ID]; !ok {
+						clients[player.ID] = conn
+					}
+					err = clients[player.ID].WriteMessage(websocket.TextMessage, []byte(player.Message))
+					if err != nil {
+						log.Printf("Error Sending Websocket Message: %v", err)
+						return
+					}
+				}
 			}
 		}
 	})
@@ -79,6 +131,16 @@ func (s *HTTPServer) Stop() error {
 
 func sendMessageToClients(game manager.GameRoom) {
 	for _, player := range game.Players {
-		clients[player.ID].WriteMessage(websocket.TextMessage, []byte(player.Message))
+		if _, ok := clients[player.ID]; ok {
+			clients[player.ID].WriteMessage(websocket.TextMessage, []byte(player.Message))
+		}
+	}
+}
+
+func sendErrorMessageToClients(game manager.GameRoom) {
+	for _, player := range game.Players {
+		if _, ok := clients[player.ID]; ok {
+			clients[player.ID].WriteMessage(websocket.TextMessage, []byte("Server Experienced an Error"))
+		}
 	}
 }
