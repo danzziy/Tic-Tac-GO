@@ -12,8 +12,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// TODO: Perhaps consider using go-chi for the server.
-
 var clients = make(map[string]*websocket.Conn)
 
 type HTTPServer struct {
@@ -71,41 +69,56 @@ func NewHTTPServer(port int, manager manager.Manager) *HTTPServer {
 				return
 			}
 			playerMessage := string(bytes)
+			log.Printf(playerMessage)
 			// On successful move send game message to both players using
 			// clients[playerID] to do so. On unsuccessful moves, send
 			// connection to current player using writeJson
 
 			switch {
 			case regex.MatchString(playerMessage):
-				game, err := manager.ExecutePlayerMove(game.RoomID, playerMessage)
+				log.Printf("0 Execute Player Move %v", game)
+
+				gameInfo, err := manager.ExecutePlayerMove(game.RoomID, playerMessage)
+				log.Printf("1 Execute Player Move %v", game)
+
 				if err != nil {
 					log.Printf("Failed to Execute Player Move: %v", err)
 					manager.EndGame(game.RoomID)
 					sendErrorMessageToClients(game)
 					return
 				}
-				sendMessageToClients(game)
+				sendMessageToClients(gameInfo)
 			case playerMessage == "End Game":
 				// TODO: Fix logic, after users end the game, they should be able to start a new one.
-				game, err := manager.EndGame(game.RoomID)
+				log.Printf("0 EndGame %v", game)
+
+				gameInfo, err := manager.EndGame(game.RoomID)
+				log.Printf("1 EndGame %v", game)
+
 				if err != nil {
 					log.Printf("Failed to End Game: %v", err)
 					manager.EndGame(game.RoomID)
 					sendErrorMessageToClients(game)
 					return
 				}
-				sendMessageToClients(game)
+				sendMessageToClients(gameInfo)
 			case playerMessage == "Join Room":
-				game, err := manager.StartGame(playerMessage)
+				log.Printf("Player Message: %s", "WE ARE JOINING ROOM")
+				log.Printf("0 StartGame %v", game)
+
+				game, err = manager.StartGame(playerMessage)
+				log.Printf("0 EndGame %v", game)
+
 				if err != nil {
 					log.Printf("Error Starting Game: %v", err)
-					sendErrorMessageToClients(game)
 					return
 				}
 				for _, player := range game.Players {
 					if _, ok := clients[player.ID]; !ok {
 						clients[player.ID] = conn
 					}
+					log.Printf("Player Message: %s", player.Message)
+
 					err = clients[player.ID].WriteMessage(websocket.TextMessage, []byte(player.Message))
 					if err != nil {
 						log.Printf("Error Sending Websocket Message: %v", err)
@@ -132,6 +145,8 @@ func (s *HTTPServer) Stop() error {
 func sendMessageToClients(game manager.GameRoom) {
 	for _, player := range game.Players {
 		if _, ok := clients[player.ID]; ok {
+			log.Printf("Player Message: %s", player.Message)
+
 			clients[player.ID].WriteMessage(websocket.TextMessage, []byte(player.Message))
 		}
 	}
