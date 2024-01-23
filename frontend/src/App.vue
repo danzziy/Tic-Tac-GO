@@ -59,6 +59,17 @@ export default {
     methods: {
         async startGame() {
            WS.send("Join Room")
+           WS.onmessage = (event) => {
+            console.log("APP VUE")
+            this.page = event.data;
+            
+            console.log("From app.vue: " + this.page);
+            if( this.playerNumber == 0 && this.page == 'Start Game'){
+                this.playerNumber = 2
+            } else {
+                this.playerNumber = 1
+            }
+        }
         },
         gameOver(gameOverMessage) {
             this.page = 'Game Over';
@@ -66,18 +77,8 @@ export default {
         },
         async endGame(){
             this.page = 'Home Page';
-            WS.send("Terminate Connection")
-            WS.onmessage = (event) => {
-                console.log("APP VUE")
-                this.page = event.data;
-                
-                console.log("From app.vue: " + this.page);
-                if( this.playerNumber == 0 && this.page == 'Start Game'){
-                    this.playerNumber = 2
-                } else {
-                    this.playerNumber = 1
-                }
-            }
+            WS.send("End Game")
+            this.playerNumber = 0
         }
     }
 }

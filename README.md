@@ -47,7 +47,7 @@ The below hash will be used to keep track of the state of the game in a room. Pl
 automatically assigned to the first room that is available which from the above list.
 
 ```
-Room:<uuid> p1SocketID <id> p2SocketID <id> gameState <base3>
+Room:<uuid> player1ID <id> player2ID <id> gameState <base3>
 ```
 
 ### Private Rooms
@@ -56,7 +56,7 @@ Private rooms will only have the below hash associated with it, this hash will a
 to have two friends play within the same room.
 
 ```
-Room:<uuid> p1SocketID <id> p2SocketID <id> gameState <base3>
+Room:<uuid> player1ID <id> player2ID <id> gameState <base3>
 ```
 
 ### Public Game Sequence Diagram
@@ -80,7 +80,7 @@ sequenceDiagram
     Database-->>Server: No Rooms Available
 
     Server->>Database: Create Available Public Room
-    Note over Server, Database: Room:<uuid> p1SocketID <br> gameState 000000000
+    Note over Server, Database: Room:<uuid> player1ID <id> <br> gameState 000000000
     Note over Server, Database: RPUSH Public:Rooms:Available <uuid>
     Database-->>Server: Success
 
@@ -101,7 +101,7 @@ sequenceDiagram
 
     Server->>Database: Join Available Room
     Note over Server, Database: RPOP Public:Rooms:Available<uuid>
-    Note over Server, Database: HSET Room:<uuid> p2SocketID<id>
+    Note over Server, Database: HSET Room:<uuid> player2ID <id>
     Database-->>Server: Success
     end
     

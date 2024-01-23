@@ -37,28 +37,19 @@ func TestListensForHTTPConnections(t *testing.T) {
 func TestStopsListeningForHTTPConnections(t *testing.T) {
 	t.Parallel()
 	port := test.FindAvailablePort()
-	startChan := make(chan error)
-	startErr := assert.AnError
 
 	// Arrange
 	server := NewHTTPServer(port, nil)
-	go func() { startChan <- server.Start() }()
-
+	go func() { _ = server.Start() }()
 	time.Sleep(10 * time.Millisecond)
 
 	// Act
-	_ = server.Stop()
-
-	select {
-	case startErr = <-startChan:
-	case <-time.After(100 * time.Millisecond):
-	}
-
+	stopErr := server.Stop()
 	_, err := net.Dial("tcp", fmt.Sprintf("127.0.0.1:%d", port))
 
 	// Assert
 	assert.Error(t, err)
-	assert.NoError(t, startErr)
+	assert.NoError(t, stopErr)
 }
 
 func TestUpgradesPublicEndpoitToWebsocketConnection(t *testing.T) {

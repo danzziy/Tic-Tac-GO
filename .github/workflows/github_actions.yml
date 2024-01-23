@@ -1,9 +1,14 @@
-name: Go
+name: Tic-Tac-Go
 
 on:
   pull_request:
     branches:
       - '*'
+
+permissions:
+  contents: read
+  pull-requests: read
+  checks: write
 
 jobs:
   Test_Build_Backend:
@@ -21,6 +26,11 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
       
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.54
+
       - name: Run Tests
         run: go test ./...
 

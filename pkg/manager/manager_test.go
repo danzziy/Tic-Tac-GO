@@ -12,7 +12,6 @@ import (
 
 func TestStartGameWhenNoPublicRoomsAreAvailable(t *testing.T) {
 	t.Parallel()
-
 	database := new(mockDatabase)
 
 	// Arrange
@@ -34,28 +33,101 @@ func TestStartGameWhenNoPublicRoomsAreAvailable(t *testing.T) {
 
 func TestStartGameWhenAPublicRoomIsAvailable(t *testing.T) {
 	t.Parallel()
-
 	roomID := uuid.NewString()
-	player1ID := uuid.NewString()
+	player2ID := uuid.NewString()
 
 	database := new(mockDatabase)
 
+	expectedGameRoom := GameRoom{roomID, []Player{
+		{uuid.NewString(), "Start Game"},
+		{player2ID, "Start Game"},
+	}}
+
 	// Arrange
 	database.On("PublicRoomAvailable").Return(true, nil).Once()
-	database.On("JoinPublicRoom", matcher(matchUUID)).Return(roomID, player1ID, nil).Once()
+	database.On("JoinPublicRoom", matcher(matchUUID)).Return(roomID, nil).Once()
+	database.On("RetrieveGame", matcher(matchUUID)).Return(expectedGameRoom, nil).Once()
 
 	// Act
 	manager := NewManager(database, nil)
 	actualGameRoom, err := manager.StartGame("Join Room")
 
-	expectedGameRoom := GameRoom{roomID, []Player{
-		{player1ID, "Start Game"},
-		{database.Calls[1].Arguments.String(0), "Start Game"},
-	}}
-
 	// Assert
 	assert.NoError(t, err)
+	database.AssertExpectations(t)
 	assert.Equal(t, expectedGameRoom, actualGameRoom)
+}
+
+func TestStartGameFailsWhenRetrievingPublicRoomIsAvailable(t *testing.T) {
+	t.Parallel()
+	database := new(mockDatabase)
+
+	// Arrange
+	database.On("PublicRoomAvailable").Return(false, assert.AnError).Once()
+
+	// Act
+	manager := NewManager(database, nil)
+	actualGameRoom, err := manager.StartGame("Join Room")
+
+	// Assert
+	assert.Error(t, err)
+	assert.Empty(t, actualGameRoom)
+	database.AssertExpectations(t)
+}
+
+func TestStartGameWhenCreatingPublicRoomFail(t *testing.T) {
+	t.Parallel()
+	database := new(mockDatabase)
+
+	// Arrange
+	database.On("PublicRoomAvailable").Return(false, nil).Once()
+	database.On("CreatePublicRoom", mock.MatchedBy(matchUUID), mock.MatchedBy(matchUUID)).Return(assert.AnError)
+
+	// Act
+	manager := NewManager(database, nil)
+	actualGameRoom, err := manager.StartGame("Join Room")
+
+	// Assert
+	assert.Error(t, err)
+	assert.Empty(t, actualGameRoom)
+	database.AssertExpectations(t)
+}
+
+func TestStartGameWhenJoiningPublicRoomFail(t *testing.T) {
+	t.Parallel()
+	database := new(mockDatabase)
+
+	// Arrange
+	database.On("PublicRoomAvailable").Return(true, nil).Once()
+	database.On("JoinPublicRoom", mock.MatchedBy(matchUUID)).Return("", assert.AnError)
+
+	// Act
+	manager := NewManager(database, nil)
+	actualGameRoom, err := manager.StartGame("Join Room")
+
+	// Assert
+	assert.Error(t, err)
+	assert.Empty(t, actualGameRoom)
+	database.AssertExpectations(t)
+}
+
+func TestStartGameWhenRetrievingRoomFails(t *testing.T) {
+	t.Parallel()
+	database := new(mockDatabase)
+	roomID := uuid.NewString()
+
+	// Arrange
+	database.On("PublicRoomAvailable").Return(true, nil).Once()
+	database.On("JoinPublicRoom", matcher(matchUUID)).Return(roomID, nil).Once()
+	database.On("RetrieveGame", matcher(matchUUID)).Return(GameRoom{}, assert.AnError).Once()
+
+	// Act
+	manager := NewManager(database, nil)
+	actualGameRoom, err := manager.StartGame("Join Room")
+
+	// Assert
+	assert.Error(t, err)
+	assert.Empty(t, actualGameRoom)
 	database.AssertExpectations(t)
 }
 
@@ -88,7 +160,6 @@ func TestExecutesPlayerMove(t *testing.T) {
 		tc := tc
 		t.Run(fmt.Sprintf("with player move %s", tc.playerMove), func(t *testing.T) {
 			t.Parallel()
-
 			gameRoom := GameRoom{tc.expectedGameRoom.RoomID, []Player{
 				{tc.expectedGameRoom.Players[0].ID, tc.prevGameState},
 				{tc.expectedGameRoom.Players[1].ID, tc.prevGameState},
@@ -99,9 +170,9 @@ func TestExecutesPlayerMove(t *testing.T) {
 
 			// Arrange
 			database.On("RetrieveGame", matcher(matchUUID)).Return(gameRoom, nil).Once()
-			analyzer.On("ValidMove", tc.prevGameState, matcher(matchGameBoard)).Return(true, nil).Once()
+			analyzer.On("ValidMove", tc.prevGameState, matcher(matchGameBoard)).Return(true).Once()
 			database.On("ExecutePlayerMove", matcher(matchUUID), matcher(matchGameBoard)).Return(nil).Once()
-			analyzer.On("DetermineWinner", matcher(matchGameBoard), gameRoom.Players).Return(tc.expectedGameRoom.Players, nil).Once()
+			analyzer.On("DetermineWinner", matcher(matchGameBoard), gameRoom.Players).Return(tc.expectedGameRoom.Players).Once()
 
 			// Act
 			manager := NewManager(database, analyzer)
@@ -117,7 +188,6 @@ func TestExecutesPlayerMove(t *testing.T) {
 
 func TestEndGame(t *testing.T) {
 	t.Parallel()
-
 	roomID := uuid.NewString()
 	player1ID := uuid.NewString()
 	player2ID := uuid.NewString()
@@ -159,9 +229,9 @@ func (m *mockDatabase) CreatePublicRoom(roomID string, playerID string) error {
 	return args.Error(0)
 }
 
-func (m *mockDatabase) JoinPublicRoom(playerID string) (string, string, error) {
+func (m *mockDatabase) JoinPublicRoom(playerID string) (string, error) {
 	args := m.Called(playerID)
-	return args.String(0), args.String(1), args.Error(2)
+	return args.String(0), args.Error(1)
 }
 
 func (m *mockDatabase) RetrieveGame(roomID string) (GameRoom, error) {
@@ -183,14 +253,14 @@ type mockAnalyzer struct {
 	mock.Mock
 }
 
-func (m *mockAnalyzer) ValidMove(prevGameState string, playerMove string) (bool, error) {
+func (m *mockAnalyzer) ValidMove(prevGameState string, playerMove string) bool {
 	args := m.Called(prevGameState, playerMove)
-	return args.Bool(0), args.Error(1)
+	return args.Bool(0)
 }
 
-func (m *mockAnalyzer) DetermineWinner(playerMove string, players []Player) ([]Player, error) {
+func (m *mockAnalyzer) DetermineWinner(playerMove string, players []Player) []Player {
 	args := m.Called(playerMove, players)
-	return args.Get(0).([]Player), args.Error(1)
+	return args.Get(0).([]Player)
 }
 
 func matcher(fn interface{}) interface{} {
