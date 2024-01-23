@@ -78,7 +78,7 @@ func NewHTTPServer(port int, manager manager.Manager) *HTTPServer {
 					_, _ = manager.EndGame(game.RoomID)
 					return
 				}
-				if sendMessageToClients(gameInfo); err != nil {
+				if err := sendMessageToClients(gameInfo); err != nil {
 					return
 				}
 			case playerMessage == "End Game":
@@ -88,7 +88,7 @@ func NewHTTPServer(port int, manager manager.Manager) *HTTPServer {
 					_, _ = manager.EndGame(game.RoomID)
 					return
 				}
-				if sendMessageToClients(gameInfo); err != nil {
+				if err := sendMessageToClients(gameInfo); err != nil {
 					return
 				}
 			case playerMessage == "Join Room":
