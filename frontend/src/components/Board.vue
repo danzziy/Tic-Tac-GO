@@ -1,8 +1,10 @@
 <template>
-    <div class="board">
-        <button v-for="(cell, index) in cells" :key="index" @click="handleClick(index)" :textContent="cell">
-            {{ cell }}
-        </button>
+    <div class="wrapper">
+        <div class="board">
+            <button v-for="(cell, index) in cells" :key="index" @click="handleClick(index)" :textContent="cell">
+                {{ cell }}
+            </button>
+        </div>
     </div>
 </template>
 
@@ -65,15 +67,25 @@ export default {
 </script>
 
 <style scope>
+.wrapper {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+
+}
+
 .board {
-    display: grid;
+    display: inline-grid;
     grid-template-columns: repeat(3, 100px);
     grid-gap: 0px;
     position: relative;
     pointer-events: all;
     justify-content: center;
     align-items: center;
-    transform: translate(0%, 50%); 
+    transform: translate(0%, 20%); 
+    background: rgba(0,0,0,0.5);
+    text-align: center;
+    margin: auto;
 
 }
 
@@ -81,7 +93,7 @@ export default {
     width: 100px;
     height: 100px;
     background: transparent;
-    border: 1px solid white;
+    border: 1px solid whitesmoke;
     display: flex;
     align-items: center;
     justify-content: center;
