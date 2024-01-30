@@ -78,16 +78,15 @@ func (m *manager) ExecutePlayerMove(roomID string, playerMove string) (GameRoom,
 	}
 	prevGameState := gameRoom.Players[0].Message
 
-	validMove := m.analyzer.ValidMove(prevGameState, playerMove)
-
-	if validMove {
-		if err := m.database.ExecutePlayerMove(roomID, playerMove); err != nil {
-			return GameRoom{}, err
-		}
-		players := m.analyzer.DetermineWinner(playerMove, gameRoom.Players)
-		return GameRoom{gameRoom.RoomID, players}, nil
+	if validMove := m.analyzer.ValidMove(prevGameState, playerMove); !validMove {
+		return GameRoom{}, nil
 	}
-	return GameRoom{}, nil
+
+	if err := m.database.ExecutePlayerMove(roomID, playerMove); err != nil {
+		return GameRoom{}, err
+	}
+	players := m.analyzer.DetermineWinner(playerMove, gameRoom.Players)
+	return GameRoom{gameRoom.RoomID, players}, nil
 }
 
 func (m *manager) EndGame(roomID string) (GameRoom, error) {

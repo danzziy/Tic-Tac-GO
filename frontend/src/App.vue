@@ -1,24 +1,26 @@
 <template>
     <div id="app_pages">
-        <div id="home_page" v-if="page === 'Home Page'"> 
+        <div class="pages" id="home_page" v-if="page === 'Home Page'"> 
             <div class="centered-div">TIC-TAC-GO</div>            
             <Button @click="startGame" text="Start Game" />
         </div>
 
-        <div v-else-if="page === 'Waiting for Player'">
+        <div class="pages" v-else-if="page === 'Waiting for Player'">
             <div class="centered-div">Loading...</div>
         </div>
 
-        <div v-else-if="page === 'Start Game'">
+        <div class="pages" v-else-if="page === 'Start Game'">
+            <div class="player-num">Player {{ playerNumber }} </div>            
+
             <Board  @game-over="gameOver" :playerNumber="playerNumber"/>
         </div>
 
-        <div v-else-if="page === 'Game Over'">
+        <div class="pages" v-else-if="page === 'Game Over'">
             <div class="centered-div">{{ playerOutcome }}</div>
             <Button @click="endGame" text="End Game" />
         </div>
 
-        <div v-else>
+        <div class="pages" v-else>
             <div class="centered-div">404</div>
         </div>
   </div>
@@ -89,10 +91,11 @@ div #app_pages {
     height: 100vh;
     width: 100vw;
 
-    position: relative;
+    /* position: relative; */
     pointer-events: none
 }
-div #home_page {
+
+.pages {
     height: 100vh;
     width: 100vw;
 }
@@ -109,6 +112,24 @@ div #home_page {
 
     font-family: '8bit';
     font-size: 150px;
+    color: white;
+    height: fit-content;
+    width: 100%;
+    justify-content: center;
+    pointer-events: none;
+    white-space: nowrap; 
+    transform: translate(0%, 50%); 
+    display: flex;
+    cursor: none;
+}
+
+.player-num {
+    padding: 10px;
+    width: 100%;
+    margin: 0 auto 15px; /* 0 top margin, auto left and right margins, 15px bottom margin */
+
+    font-family: '8bit';
+    font-size: 50px;
     color: white;
     height: fit-content;
     width: 100%;
