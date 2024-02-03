@@ -41,7 +41,12 @@ export default {
                         console.log("newGameState[i]: " + newGameState[i]);
                     }
                 })
-                if(!event.data.includes('Ongoing')) {
+                if(event.data.includes("Opponent Left")){
+                    var gameOverMessage = `${event.data.substring(indexOfColon + 1)}`;
+                    console.log("Opponent Left: " + gameOverMessage)
+                    this.$emit('game-over', gameOverMessage)
+                }
+                else if(!event.data.includes('Ongoing')) {
                     var gameOverMessage = `You ${event.data.substring(indexOfColon + 1)}`;
                     console.log("GAME OVER: " + gameOverMessage)
                     this.$emit('game-over', gameOverMessage);

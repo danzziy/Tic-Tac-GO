@@ -65,7 +65,21 @@ func NewHTTPServer(port int, manager manager.Manager) *HTTPServer {
 			_, bytes, err = conn.ReadMessage()
 			if err != nil {
 				log.Printf("Failed to Read Websocket Message: %v", err)
-				_, _ = manager.EndGame(game.RoomID)
+				// You will send an termination message after a player has disconnected to both players.
+				// Given that a player has disconnected, only one of those messages will go through.
+				// The message that fails to send due to a closed socket will result in the closed socket being purged.
+				gameInfo, _ := manager.EndGame(game.RoomID)
+
+				for _, player := range gameInfo.Players {
+					if _, ok := clients[player.ID]; ok {
+						log.Printf("Player Message Opponent Left: %s", "Opponent Left")
+
+						if err := clients[player.ID].WriteMessage(websocket.TextMessage, []byte("Opponent Left")); err != nil {
+							delete(clients, player.ID)
+							log.Printf("Error Sending Websocket Message: %v", err)
+						}
+					}
+				}
 				return
 			}
 			playerMessage := string(bytes)
@@ -75,12 +89,11 @@ func NewHTTPServer(port int, manager manager.Manager) *HTTPServer {
 				gameInfo, err := manager.ExecutePlayerMove(game.RoomID, playerMessage)
 				if err != nil {
 					log.Printf("Failed to Execute Player Move: %v", err)
-					_, _ = manager.EndGame(game.RoomID)
 					return
 				}
-				if err := sendMessageToClients(gameInfo); err != nil {
-					return
-				}
+				log.Printf("Player Message REGEX: %s", gameInfo.Players[0].Message)
+
+				sendMessageToClients(gameInfo)
 			case playerMessage == "End Game":
 				gameInfo, err := manager.EndGame(game.RoomID)
 				if err != nil {
@@ -88,9 +101,7 @@ func NewHTTPServer(port int, manager manager.Manager) *HTTPServer {
 					_, _ = manager.EndGame(game.RoomID)
 					return
 				}
-				if err := sendMessageToClients(gameInfo); err != nil {
-					return
-				}
+				sendMessageToClients(gameInfo)
 			case playerMessage == "Join Room":
 				game, err = manager.StartGame(playerMessage)
 				if err != nil {
@@ -102,7 +113,7 @@ func NewHTTPServer(port int, manager manager.Manager) *HTTPServer {
 					if _, ok := clients[player.ID]; !ok {
 						clients[player.ID] = conn
 					}
-					log.Printf("Player Message: %s", player.Message)
+					log.Printf("Player Message Join Room: %s", player.Message)
 
 					err = clients[player.ID].WriteMessage(websocket.TextMessage, []byte(player.Message))
 					if err != nil {
@@ -131,16 +142,15 @@ func (s *HTTPServer) Stop() error {
 	return nil
 }
 
-func sendMessageToClients(game manager.GameRoom) error {
+func sendMessageToClients(game manager.GameRoom) {
 	for _, player := range game.Players {
 		if _, ok := clients[player.ID]; ok {
-			log.Printf("Player Message: %s", player.Message)
+			log.Printf("Player Message Send Message: %s", player.Message)
 
 			if err := clients[player.ID].WriteMessage(websocket.TextMessage, []byte(player.Message)); err != nil {
+				delete(clients, player.ID)
 				log.Printf("Error Sending Websocket Message: %v", err)
-				return err
 			}
 		}
 	}
-	return nil
 }

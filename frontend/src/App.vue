@@ -76,6 +76,7 @@ export default {
         gameOver(gameOverMessage) {
             this.page = 'Game Over';
             this.playerOutcome = gameOverMessage;
+            console.log("GAME OVER PAGE MESSAGE: "+ gameOverMessage)
         },
         async endGame(){
             this.page = 'Home Page';

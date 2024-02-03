@@ -1,5 +1,5 @@
 <script>
-const WS = new WebSocket('wss://lrmklnhv-8081.use.devtunnels.ms/public');
+const WS = new WebSocket('ws://localhost:8081/public');
 
 WS.onopen = (event) => {
     console.log('WebSocket connection established.');
