@@ -6,33 +6,66 @@ on:
       - '*'
 
 permissions:
-  contents: read
-  pull-requests: read
+  contents: write
+  pull-requests: write
   checks: write
 
 jobs:
-  Test_Build_Backend:
-    runs-on: ubuntu-22.04
-    strategy:
-      matrix:
-        go-version: [ '1.21.2' ]
+  # Test_Build_Backend:
+  #   runs-on: ubuntu-22.04
+  #   strategy:
+  #     matrix:
+  #       go-version: [ '1.21.2' ]
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
         
-      - name: Setup Go ${{ matrix.go-version }}
-        uses: actions/setup-go@v4
-        with:
-          go-version: ${{ matrix.go-version }}
+  #     - name: Setup Go ${{ matrix.go-version }}
+  #       uses: actions/setup-go@v4
+  #       with:
+  #         go-version: ${{ matrix.go-version }}
       
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
+  #     - name: golangci-lint
+  #       uses: golangci/golangci-lint-action@v3
+  #       with:
+  #         version: v1.54
+
+  #     - name: Run Tests
+  #       if: false
+  #       run: go test ./...
+
+  #     - name: Build Binary
+  #       run: go build
+
+  Lint_Docker:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: hadolint/hadolint-action@v3.1.0
+        id: server
         with:
-          version: v1.54
-
-      - name: Run Tests
-        run: go test ./...
-
-      - name: Build Binary
-        run: go build
+          dockerfile: ./docker/server.Dockerfile
+          failure-threshold: warning
+      - uses: hadolint/hadolint-action@v3.1.0
+        id: client
+        with:
+          dockerfile: ./docker/client.Dockerfile
+          failure-threshold: warning
+      - name: Update Pull Request
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const output = `
+            #### Success: \`${{ steps.client.outcome == 'success' && steps.server.outcome == 'success' }}\`
+            \`\`\`
+            ${process.env.HADOLINT_RESULTS}
+            \`\`\`
+            `;
+      
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })

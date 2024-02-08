@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  frontend:
+    image: tic-frontend:latest
+    ports:
+      - "8080:8080"
+    networks:
+      - my_network
+
+  backend:
+    image: tic:latest
+    ports:
+      - "8081:8081"
+    environment:
+      - LISTENING_PORT=8081
+      - DATABASE_HOST=redis:6379
+      - DATABASE_PASSWORD=
+    networks:
+      - my_network
+
+  redis:
+    image: redis/redis-stack-server:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - my_network
+
+networks:
+  my_network:
+    driver: bridge
