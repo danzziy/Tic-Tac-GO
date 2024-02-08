@@ -48,8 +48,8 @@ jobs:
         with:
           # scanning two directories: ./terraform/ ./cfn-templates/ plus a single file
           path: ./docker/'
-          output_path: myResults/
+          output_path: ./docker/
       # Display the results in json format
       - name: display kics results
         run: |
-          cat myResults/results.json
+          cat ./docker/results.json
