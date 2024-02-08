@@ -43,11 +43,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: hadolint/hadolint-action@v3.1.0
+        id: server
         with:
           dockerfile: ./docker/server.Dockerfile
           failure-threshold: warning
       - uses: hadolint/hadolint-action@v3.1.0
-        id: hadolint
+        id: client
         with:
           dockerfile: ./docker/client.Dockerfile
           failure-threshold: warning
@@ -56,7 +57,7 @@ jobs:
         with:
           script: |
             const output = `
-            #### Hadolint: \`${{ steps.hadolint.outcome }}\`
+            #### Success: \`${{ steps.client.outcome == 'success' && steps.server.outcome == 'success' }}\`
             \`\`\`
             ${process.env.HADOLINT_RESULTS}
             \`\`\`
