@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"os"
 	"tic-tac-go/pkg/analyzer"
 	"tic-tac-go/pkg/config"
 	"tic-tac-go/pkg/database"
@@ -10,14 +10,14 @@ import (
 )
 
 func main() {
-	server := initializeGameServer("127.0.0.1:6379")
+	server := initializeGameServer()
 	_ = server.Start()
 	defer func() { _ = server.Stop() }()
 }
 
-func initializeGameServer(dbAddr string) *game.HTTPServer {
+func initializeGameServer() *game.HTTPServer {
 	env := config.NewConfig(
-		[]string{"LISTENING_PORT=8081", fmt.Sprintf("DATABASE_HOST=%s", dbAddr), "DATABASE_PASSWORD=something"},
+		os.Environ(),
 	)
 	port, _ := env.ListeningPort()
 	databaseHost, _ := env.DatabaseHost()
