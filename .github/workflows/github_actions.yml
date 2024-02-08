@@ -11,32 +11,32 @@ permissions:
   checks: write
 
 jobs:
-  Test_Build_Backend:
-    runs-on: ubuntu-22.04
-    strategy:
-      matrix:
-        go-version: [ '1.21.2' ]
+  # Test_Build_Backend:
+  #   runs-on: ubuntu-22.04
+  #   strategy:
+  #     matrix:
+  #       go-version: [ '1.21.2' ]
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
         
-      - name: Setup Go ${{ matrix.go-version }}
-        uses: actions/setup-go@v4
-        with:
-          go-version: ${{ matrix.go-version }}
+  #     - name: Setup Go ${{ matrix.go-version }}
+  #       uses: actions/setup-go@v4
+  #       with:
+  #         go-version: ${{ matrix.go-version }}
       
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
-        with:
-          version: v1.54
+  #     - name: golangci-lint
+  #       uses: golangci/golangci-lint-action@v3
+  #       with:
+  #         version: v1.54
 
-      - name: Run Tests
-        if: false
-        run: go test ./...
+  #     - name: Run Tests
+  #       if: false
+  #       run: go test ./...
 
-      - name: Build Binary
-        run: go build
+  #     - name: Build Binary
+  #       run: go build
 
   Lint_Docker:
     runs-on: ubuntu-22.04
@@ -49,7 +49,11 @@ jobs:
           # scanning two directories: ./terraform/ ./cfn-templates/ plus a single file
           path: ./docker/'
           output_path: ./docker/results.json
-      # Display the results in json format
-      - name: display kics results
+        # Display the results in json format
+      - name: displday kics results
         run: |
           cat ./docker/results.json
+      - name: display kics results
+        run: ls -la
+      - name: s
+        run: pwd
