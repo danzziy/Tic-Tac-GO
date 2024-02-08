@@ -41,19 +41,25 @@ jobs:
   Lint_Docker:
     runs-on: ubuntu-22.04
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: run kics Scan
-        uses: checkmarx/kics-github-action@v1.7.0
+      - uses: actions/checkout@v3
+      - uses: hadolint/hadolint-action@v3.1.0
         with:
-          # scanning two directories: ./terraform/ ./cfn-templates/ plus a single file
-          path: ./docker/'
-          output_path: ./docker/results.json
-        # Display the results in json format
-      - name: displday kics results
-        run: |
-          cat ./docker/results.json
-      - name: display kics results
-        run: ls -la
-      - name: s
-        run: pwd
+          dockerfile: ./docker/server.Dockerfile
+      - name: Update Pull Request
+        uses: actions/github-script@v6
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const output = `
+            #### Hadolint: \`${{ steps.hadolint.outcome }}\`
+            \`\`\`
+            ${process.env.HADOLINT_RESULTS}
+            \`\`\`
+            `;
+      
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
