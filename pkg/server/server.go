@@ -91,7 +91,6 @@ func NewHTTPServer(port int, manager manager.Manager) *HTTPServer {
 					log.Printf("Failed to Execute Player Move: %v", err)
 					return
 				}
-				log.Printf("Player Message REGEX: %s", gameInfo.Players[0].Message)
 
 				sendMessageToClients(gameInfo)
 			case playerMessage == "End Game":
@@ -125,7 +124,7 @@ func NewHTTPServer(port int, manager manager.Manager) *HTTPServer {
 		}
 	})
 
-	return &HTTPServer{&http.Server{Addr: fmt.Sprintf("127.0.0.1:%d", port), Handler: router}}
+	return &HTTPServer{&http.Server{Addr: fmt.Sprintf("0.0.0.0:%d", port), Handler: router}}
 }
 
 func (s *HTTPServer) Start() error {
