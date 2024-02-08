@@ -1,7 +1,14 @@
 version: '3.8'
 
 services:
-  tic:
+  frontend:
+    image: tic-frontend:latest
+    ports:
+      - "8080:8080"
+    networks:
+      - my_network
+
+  backend:
     image: tic:latest
     ports:
       - "8081:8081"

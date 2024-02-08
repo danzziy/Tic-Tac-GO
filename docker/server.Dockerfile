@@ -5,4 +5,4 @@ COPY ./tic ./tic
 
 EXPOSE 8081
 
-ENTRYPOINT [ "./tic" ]
+ENTRYPOINT ["./tic"]
